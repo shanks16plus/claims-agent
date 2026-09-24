@@ -48,6 +48,13 @@ def save_clean_copy(source, dest):
     return dest
 
 
+def store_upload(data, name, slot, folder):
+    """Keep only the metadata the fraud check needs, then save a clean copy (no GPS, no EXIF)."""
+    metadata = read_metadata(data)
+    dest = save_clean_copy(data, Path(folder) / f"{slot}_{Path(name).stem}.jpg")
+    return {"slot": slot, "name": Path(name).name, "path": str(dest), "metadata": metadata}
+
+
 def image_block(path):
     """A photo as a Claude image content block."""
     buffer = io.BytesIO()

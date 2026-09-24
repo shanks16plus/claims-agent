@@ -23,6 +23,14 @@ cp .env.example .env        # then add your API keys
 
 Business rules, fraud points and prices per model are in `core/config.py`. Part prices are in `data/parts_prices.csv` (placeholders for now).
 
+## Run the app
+
+```bash
+streamlit run app.py
+```
+
+Opens at http://localhost:8501. The team password (`APP_PASSWORD`) only applies to the deployed link, not to local runs. In the claim form, "Demo: fill in a ready-made claim" loads a claim with photos, so no uploads are needed.
+
 ## Try the tools (step 1)
 
 ```bash

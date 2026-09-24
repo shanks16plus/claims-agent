@@ -1,0 +1,20 @@
+[theme]
+base = "light"
+primaryColor = "#3CCB7F"
+backgroundColor = "#F6F7FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1B2340"
+linkColor = "#2F4A8A"
+borderColor = "#DDE1EA"
+showWidgetBorder = true
+baseRadius = "4px"
+buttonRadius = "4px"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+headingFont = "Schibsted Grotesk:https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&display=swap"
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = false
+
+[browser]
+gatherUsageStats = false

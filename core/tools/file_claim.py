@@ -1,6 +1,7 @@
 """Tool 7: save the claim and, when it is routed, build the adjuster file."""
 import json
 import time
+from pathlib import Path
 
 from core import checklist, config, images, storage
 from core.tools.decide import ROUTE, money
@@ -70,7 +71,9 @@ def _save_files(claim, results, routed):
     """Copy the photos (without metadata) into the claim folder, plus claim.json and the adjuster file."""
     folder = CLAIMS_DIR / claim["claim_id"]
     for photo in claim["photos"]:
-        photo["path"] = str(images.save_clean_copy(photo["path"], folder / "photos" / f"{photo['slot']}_{photo['name']}"))
+        name = Path(photo["path"]).name
+        name = name if name.startswith(photo["slot"]) else f"{photo['slot']}_{name}"
+        photo["path"] = str(images.save_clean_copy(photo["path"], folder / "photos" / name))
         photo.pop("metadata", None)
     (folder / "claim.json").write_text(json.dumps(
         {"claim": {k: v for k, v in claim.items() if k != "metrics"},

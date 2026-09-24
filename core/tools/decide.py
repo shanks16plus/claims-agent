@@ -27,8 +27,8 @@ MESSAGES = {
         "below_deductible": ("Your claim is registered. The estimated repair cost ({gross}) is below your "
                              "deductible of {deductible}, so there is no payment on this claim. If a garage "
                              "quotes a higher amount, you can send us the quote."),
-        "routed": ("Your claim has been filed and passed to a claims adjuster, who already has your photos "
-                   "and details. The adjuster will contact you about the next steps. This is not a "
+        "routed": ("Your claim has been filed and passed to a claims handler, who already has your photos "
+                   "and details. The claims handler will contact you about the next steps. This is not a "
                    "rejection: a person just needs to review your claim."),
     },
     "nl": {
