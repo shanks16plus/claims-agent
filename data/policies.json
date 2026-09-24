@@ -1,0 +1,77 @@
+{
+  "_note": "Fictional demo policies. No real customers. own_damage_covered is the only coverage field the system reads.",
+  "policies": [
+    {
+      "policy_number": "NL-100001",
+      "holder_first_name": "Sanne",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-03-01",
+      "vehicle": "Volkswagen Golf (2019)",
+      "vehicle_value_eur": 14000,
+      "demo_use": "Small clean claim"
+    },
+    {
+      "policy_number": "NL-100002",
+      "holder_first_name": "Daan",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 500,
+      "start_date": "2023-06-15",
+      "vehicle": "Toyota RAV4 (2021)",
+      "vehicle_value_eur": 28000,
+      "demo_use": "Large claim"
+    },
+    {
+      "policy_number": "NL-100003",
+      "holder_first_name": "Lotte",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 150,
+      "start_date": "2026-09-10",
+      "vehicle": "Peugeot 208 (2017)",
+      "vehicle_value_eur": 7500,
+      "demo_use": "Suspicious claim: policy started days before the incident"
+    },
+    {
+      "policy_number": "NL-100004",
+      "holder_first_name": "Bram",
+      "active": false,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2022-01-01",
+      "vehicle": "Opel Corsa (2016)",
+      "vehicle_value_eur": 5500,
+      "demo_use": "Lapsed policy"
+    },
+    {
+      "policy_number": "NL-100005",
+      "holder_first_name": "Fleur",
+      "active": true,
+      "coverage_type": "third_party",
+      "own_damage_covered": false,
+      "deductible_eur": 0,
+      "start_date": "2025-02-01",
+      "vehicle": "Renault Clio (2015)",
+      "vehicle_value_eur": 4500,
+      "demo_use": "Own damage not covered"
+    },
+    {
+      "policy_number": "NL-100006",
+      "holder_first_name": "Joris",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 1000,
+      "start_date": "2021-11-20",
+      "vehicle": "Kia Picanto (2014)",
+      "vehicle_value_eur": 3000,
+      "demo_use": "High deductible, low vehicle value (below deductible and total loss tests)"
+    }
+  ]
+}

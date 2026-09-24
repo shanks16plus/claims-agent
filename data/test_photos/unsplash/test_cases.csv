@@ -1,0 +1,9 @@
+claim_id,photo_filenames,description,policy_number,incident_date,true_repair_cost_eur,is_fraud,true_parts,notes
+U1,u1_15gEIt-TsmY.jpg,"I scraped a concrete pillar turning in a parking garage. The front corner is dented and the indicator light is cracked.",NL-100001,2026-09-20,,,,"Unsplash: small front-corner damage"
+U2,u2_WRAF4KoCREQ.jpg,"Someone reversed into my car in a supermarket car park and the rear light is cracked.",NL-100001,2026-09-20,,,,"Unsplash: close-up of a cracked light"
+U3,u3_Iii4uJN70Ug.jpg,"Yesterday another car hit my front wing in a car park and dented it.",NL-100002,2026-09-20,,,,"TRAP: rust and peeling paint suggest old damage"
+U4,u4_xlxeGeh1DY4.jpg,"A car pulled out of a side street and hit the front right of my car. The bumper, headlight and wing are damaged.",NL-100002,2026-09-20,,,,"Unsplash: fresh collision, debris on road"
+U5,u5_Tn9mxVvKL8g.jpg,"I lost control on a wet road and hit a barrier with the front of the car.",NL-100002,2026-09-20,,,,"Unsplash: heavy front damage"
+U6,u6_XcjVef6uvYA.jpg,"Collision at a junction. The other car rolled onto its side.",NL-100002,2026-09-20,,,,"Unsplash: multi-car accident"
+U7,u7_CSkriQWeTVs.jpg,"A low-speed bump into the car in front of me in slow traffic.",NL-100001,2026-09-20,,,,"TRAP: severe crush does not fit a low-speed bump"
+U8,u8_Eygfeq1Xe4E.jpg,"I lightly touched a bollard while parking. There is a small scratch on the front bumper.",NL-100001,2026-09-20,,,,"TRAP: fire damage and a destroyed front, not a scratch"
