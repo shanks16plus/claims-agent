@@ -34,11 +34,13 @@ OPENROUTER_API_KEY = secret("OPENROUTER_API_KEY")
 CLAUDE_MODEL = secret("CLAUDE_MODEL")
 CLAUDE_MODEL_FAST = secret("CLAUDE_MODEL_FAST") or CLAUDE_MODEL
 ASSESS_MODEL = secret("ASSESS_MODEL") or CLAUDE_MODEL
+# The chat assistant has its own setting: it needs reliable tool calls and quick replies, not vision.
+CHAT_MODEL = secret("CHAT_MODEL") or CLAUDE_MODEL_FAST
 MODEL_FOR = {
     "photo_quality": CLAUDE_MODEL_FAST,
     "assess_damage": ASSESS_MODEL,
     "fraud_review": CLAUDE_MODEL,
-    "chat": CLAUDE_MODEL_FAST,
+    "chat": CHAT_MODEL,
 }
 
 # Effort controls how long the model thinks (low / medium / high / xhigh / max).
@@ -47,7 +49,7 @@ EFFORT = {
     "photo_quality": "low",
     "assess_damage": "medium",
     "fraud_review": "medium",
-    "chat": "medium",
+    "chat": "low",                  # short thinking keeps replies quick
 }
 
 # If Claude's safety filter declines a request, retry it on another Claude model.

@@ -1,16 +1,17 @@
 [theme]
 base = "light"
-primaryColor = "#3CCB7F"
-backgroundColor = "#F6F7FA"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1B2340"
-linkColor = "#2F4A8A"
-borderColor = "#DDE1EA"
+primaryColor = "#2FAE6B"
+backgroundColor = "#F4F2EE"
+secondaryBackgroundColor = "#ECE9E3"
+textColor = "#0F1D2E"
+linkColor = "#1C3553"
+borderColor = "#D8D3CA"
 showWidgetBorder = true
-baseRadius = "4px"
-buttonRadius = "4px"
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
-headingFont = "Schibsted Grotesk:https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&display=swap"
+baseRadius = "0px"
+buttonRadius = "0px"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+headingFont = "Source Serif 4:https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
 
 [client]
 toolbarMode = "minimal"
@@ -18,3 +19,6 @@ showSidebarNavigation = false
 
 [browser]
 gatherUsageStats = false
+
+[server]
+enableStaticServing = true

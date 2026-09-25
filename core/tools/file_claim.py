@@ -129,3 +129,51 @@ def adjuster_file(claim, results):
     lines += [f"- {s['detail']} (+{s['points']})" for s in fraud["signals"]] or ["- No signals"]
     lines += ["", "## Photos", *[f"- {p['slot']}: {p['name']}" for p in claim["photos"]]]
     return "\n".join(lines) + "\n"
+
+
+HANDOVER_MESSAGES = {
+    "en": "A claims handler will take over your claim and contact you. They can see everything you have told us "
+          "so far, so you won't need to repeat it.",
+    "nl": "Een schadebehandelaar neemt uw claim over en neemt contact met u op. De behandelaar ziet alles wat u "
+          "ons al hebt verteld, dus u hoeft het niet te herhalen.",
+}
+
+
+def file_handover(claim, reason, conversation, usage):
+    """File a claim that a person takes over before it is complete (injury, theft, a request for a person,
+    the message limit...). No assessment runs: the claims handler gets what was collected plus the chat."""
+    claim["claim_id"] = claim["claim_id"] or storage.new_claim_id()
+    claim["scope_flags"] = sorted(set(claim["scope_flags"]) | {reason})
+    reason_label = checklist.SCOPE_FLAGS.get(reason, reason)
+    claim["summary"] = checklist.plain_summary(claim)
+    decision = {
+        "decision": ROUTE, "payout_eur": None, "gross_eur": None, "checks": [],
+        "reasons": [f"Handed over during the chat: {reason_label}"],
+        "next_step": "Contact the customer personally. The assessment has not run yet.",
+        "customer_message": HANDOVER_MESSAGES.get(claim.get("language"), HANDOVER_MESSAGES["en"]),
+    }
+    filed_at = storage.now()
+    folder = CLAIMS_DIR / claim["claim_id"]
+    folder.mkdir(parents=True, exist_ok=True)
+    transcript = "\n".join(f"**{turn['role']}:** {turn['text']}" for turn in conversation if turn.get("text"))
+    (folder / "adjuster_file.md").write_text(
+        f"# Adjuster file: {claim['claim_id']}\nChannel: {claim['channel']} | Policy: {claim['policy_number']}\n\n"
+        f"## Why it was routed\n- {reason_label} (handed over during the chat)\n\n"
+        f"## Suggested next step\n{decision['next_step']}\n\n## What was collected\n{claim['summary']}\n\n"
+        f"## Conversation\n{transcript}\n", encoding="utf-8")
+    metrics = claim["metrics"]
+    storage.save_claim({
+        "claim_id": claim["claim_id"], "filed_at": filed_at, "decided_at": None, "channel": claim["channel"],
+        "policy_number": claim["policy_number"], "status": "awaiting_adjuster", "decision": ROUTE,
+        "estimate_eur": None, "payout_eur": None, "fraud_risk": None, "fraud_reasons": [], "confidence": None,
+        "chat_turns": metrics.get("chat_turns", 0),
+        "seconds_to_file": round(time.time() - metrics["started_at"], 1),
+        "photo_retakes": metrics.get("photo_retakes", 0), "processing_seconds": 0,
+        "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
+        "api_cost_eur": round(usage.cost_eur, 4),
+        "details": {"claim": {k: v for k, v in claim.items() if k != "metrics"}, "policy": None, "damage": None,
+                    "estimate": None, "fraud": None, "decision": decision,
+                    "handover": {"reason": reason, "conversation": conversation}},
+    })
+    return {"filed": True, "claim_id": claim["claim_id"], "status": "awaiting_adjuster",
+            "customer_message": decision["customer_message"]}

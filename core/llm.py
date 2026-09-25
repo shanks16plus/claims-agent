@@ -219,3 +219,64 @@ def _ask_openrouter(model, prompt_name, content, schema, effort, usage, max_toke
     if choice.finish_reason == "content_filter":
         raise LLMError("The model declined to process this request.")
     return choice.message.content or ""
+
+
+# --- Chat with tools (the claims assistant) -------------------------------------------------------
+def chat(model, system, messages, tools, usage=None, effort=None, max_tokens=4000, prompt="chat"):
+    """One assistant turn that may call tools. `messages`, `tools` and the returned message use the
+    OpenAI chat format; for Claude IDs without a "/" they are translated to the Anthropic format and back."""
+    check_budget()
+    if is_openrouter(model):
+        extra = {"provider": {"require_parameters": True}}
+        if effort and _supports_effort(model):
+            extra["reasoning"] = {"effort": effort}
+        response = _openrouter().chat.completions.create(
+            model=model, max_tokens=max_tokens, tools=tools, tool_choice="auto",
+            messages=[{"role": "system", "content": system}, *messages], extra_body=extra,
+        )
+        if response.usage:
+            cost_usd = float((response.usage.model_extra or {}).get("cost") or 0.0)
+            _record(usage, model, prompt, response.usage.prompt_tokens or 0,
+                    response.usage.completion_tokens or 0, cost_usd)
+        message = response.choices[0].message
+        calls = [(c.id, c.function.name, c.function.arguments) for c in message.tool_calls or []]
+        return _assistant_message(message.content or "", calls)
+
+    response = create(
+        model, usage, effort, prompt, max_tokens=max_tokens, system=system, messages=_to_anthropic(messages),
+        tools=[{"name": t["function"]["name"], "description": t["function"]["description"],
+                "input_schema": t["function"]["parameters"]} for t in tools],
+    )
+    text = "".join(block.text for block in response.content if block.type == "text")
+    calls = [(b.id, b.name, json.dumps(b.input)) for b in response.content if b.type == "tool_use"]
+    return _assistant_message(text, calls)
+
+
+def _assistant_message(text, calls):
+    message = {"role": "assistant", "content": text}
+    if calls:
+        message["tool_calls"] = [{"id": call_id, "type": "function", "function": {"name": name, "arguments": args or "{}"}}
+                                 for call_id, name, args in calls]
+    return message
+
+
+def _to_anthropic(messages):
+    """OpenAI-format messages to Anthropic content blocks. Tool results become user turns."""
+    converted = []
+    for message in messages:
+        if message["role"] == "tool":
+            block = {"type": "tool_result", "tool_use_id": message["tool_call_id"], "content": message["content"]}
+            last = converted[-1] if converted else None
+            if last and last["role"] == "user" and isinstance(last["content"], list):
+                last["content"].append(block)
+            else:
+                converted.append({"role": "user", "content": [block]})
+        elif message["role"] == "assistant":
+            blocks = [{"type": "text", "text": message["content"]}] if message.get("content") else []
+            blocks += [{"type": "tool_use", "id": call["id"], "name": call["function"]["name"],
+                        "input": json.loads(call["function"]["arguments"] or "{}")}
+                       for call in message.get("tool_calls", [])]
+            converted.append({"role": "assistant", "content": blocks})
+        else:
+            converted.append({"role": "user", "content": [{"type": "text", "text": message["content"]}]})
+    return converted

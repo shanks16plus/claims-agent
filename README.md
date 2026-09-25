@@ -17,7 +17,8 @@ cp .env.example .env        # then add your API keys
 |---|---|
 | `OPENROUTER_API_KEY` | From openrouter.ai. All models run through it. Set a credit limit on the key. |
 | `CLAUDE_MODEL` | Strong model for damage assessment and fraud review (`anthropic/claude-opus-5.5`) |
-| `CLAUDE_MODEL_FAST` | Cheaper model for the chat and photo checks (`anthropic/claude-haiku-4.5`) |
+| `CLAUDE_MODEL_FAST` | Cheaper model for the photo checks (`anthropic/claude-haiku-4.5`) |
+| `CHAT_MODEL` | The chat assistant (`google/gemini-3.7-flash`, chosen after the chat model comparison) |
 | `ASSESS_MODEL` | Damage assessment (`moonshotai/kimi-k3`, chosen after the model comparison) |
 | `ANTHROPIC_API_KEY` | Optional: only to call Claude directly at Anthropic (use model IDs without a "/") |
 
@@ -30,6 +31,49 @@ streamlit run app.py
 ```
 
 Opens at http://localhost:8501. The team password (`APP_PASSWORD`) only applies to the deployed link, not to local runs. In the claim form, "Demo: fill in a ready-made claim" loads a claim with photos, so no uploads are needed.
+
+## The chat assistant
+
+The Chat page is the claims assistant: a conversation on the left and, on the right, what the agent is doing (the claim checklist, every tool call and every guardrail), so an audience can watch it work. "Send ready-made photos" posts the demo photo sets into the chat, so a live demo needs no uploads.
+
+The model decides what to ask and how to phrase it (`prompts/assistant_system.md`). Everything that matters is enforced in code (`core/agent.py`):
+- It can only call five tools: `lookup_policy`, `check_photo_quality`, `record_answer`, `hand_over_to_human` and `file_claim`. The last one runs the fixed pipeline (assess, price, fraud check, decide, file).
+- Answers only go into the checklist fields, and each value is checked: dates can't be in the future, and yes/no must be yes or no.
+- The claim is filed only after the customer presses "Confirm and file" themselves.
+- An injury, theft, a dispute, an upset customer or a request for a person hands the claim to a claims handler.
+- After 25 customer messages a person takes over. After two messages in a row that don't move the claim forward, the app offers a person.
+- Amounts of money are removed from replies until the claim is decided, and so are the prompt's own markers and tool names.
+
+## Chat model comparison
+
+```bash
+python scripts/compare_chat_models.py            # Gemini 3.7 Flash, GLM 5.3 Flash, MiMo-V2.6-Flash, Haiku 4.5
+```
+
+It plays the same customer through each model: the full claim with the demo photos, plus five guardrail probes (off-topic, prompt injection, a request for advice, an injury, Dutch). On 25 September 2026:
+
+| Model | Full claim | Guardrails | Median reply | Cost per chat |
+|---|---|---|---|---|
+| Gemini 3.7 Flash (chosen) | 8/8 | 5/5 | 4.2 s | €0.030 |
+| GLM 5.3 Flash | 8/8 | 5/5 | 4.2 s | €0.011 |
+| MiMo-V2.6-Flash | 7/8 (never showed the confirm step) | 5/5 | 2.4 s | €0.006 |
+| Claude Haiku 4.5 | 8/8 | 5/5 | 2.3 s | €0.068 |
+
+Costs include the photo checks. The advice probe for GLM and Haiku was re-scored by reading the replies: the first version of the check counted "I can't say whether it's covered" as advice. Gemini 3.7 Flash also leads the public τ²-bench airline leaderboard for tool-calling agents (80.6% vs 67.0% for Haiku 4.5). GLM and MiMo wrote em dashes, which the reply check now removes.
+
+## Demo video
+
+The home page shows a screen recording of a claim filed through the chat, once `static/demo.mp4` exists. To record it, start the app and run:
+
+```bash
+python scripts/record_demo.py --set small_clean   # needs Playwright (pip install playwright) and Google Chrome
+```
+
+It drives Chrome like a customer, with real model calls (a few cents), so the outcome is whatever the rules decide.
+
+## Look and feel
+
+The look lives in `ui/`: `theme.css` (styles), `motion.js` (scroll animations with GSAP), `loader3d.js` (the three.js "checking your claim" screen) and `loaders.py` (the photo scan and the claim loader, which follows the real pipeline steps). Photos come from Unsplash, the hero video from Mixkit, and GSAP and three.js from jsDelivr, so the page needs internet for those. Without it the app still works, just without the photos and animation.
 
 ## Try the tools (step 1)
 

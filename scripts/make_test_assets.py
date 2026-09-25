@@ -49,8 +49,8 @@ def closeup():
     return img
 
 
-def plate(text="TEST-01"):
-    img = Image.new("RGB", (1200, 700), (178, 34, 34))
+def plate(text="TEST-01", body=(178, 34, 34)):
+    img = Image.new("RGB", (1200, 700), body)
     d = ImageDraw.Draw(img)
     d.rectangle([0, 520, 1200, 700], fill=(150, 150, 150))
     d.rounded_rectangle([250, 260, 950, 420], radius=12, fill=(247, 196, 0), outline=(0, 0, 0), width=6)

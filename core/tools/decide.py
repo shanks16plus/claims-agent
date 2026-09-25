@@ -28,8 +28,8 @@ MESSAGES = {
                              "deductible of {deductible}, so there is no payment on this claim. If a garage "
                              "quotes a higher amount, you can send us the quote."),
         "routed": ("Your claim has been filed and passed to a claims handler, who already has your photos "
-                   "and details. The claims handler will contact you about the next steps. This is not a "
-                   "rejection: a person just needs to review your claim."),
+                   "and details. A person reviews every claim that can't be settled automatically, and they "
+                   "will contact you about the next steps."),
     },
     "nl": {
         "paid": ("Uw schade is goedgekeurd. De geschatte reparatiekosten zijn {gross}. Na aftrek van uw eigen "
@@ -39,8 +39,8 @@ MESSAGES = {
                              "uw eigen risico van {deductible}, dus er volgt geen uitkering op deze claim. "
                              "Heeft een garage een hogere offerte gemaakt? Stuur ons die offerte dan toe."),
         "routed": ("Uw schademelding is ingediend en doorgestuurd naar een schadebehandelaar, die uw foto's "
-                   "en gegevens al heeft. De behandelaar neemt contact met u op over de volgende stappen. "
-                   "Dit is geen afwijzing: een medewerker bekijkt uw claim alleen persoonlijk."),
+                   "en gegevens al heeft. Een medewerker bekijkt elke claim die niet automatisch kan worden "
+                   "afgehandeld en neemt contact met u op over de volgende stappen."),
     },
 }
 

@@ -12,6 +12,8 @@ if not theme.password_gate():
 pages = [
     st.Page("views/start.py", title="Home", url_path="home", default=True),
     st.Page("views/claim_form.py", title="File a claim", url_path="claim"),
+    st.Page("views/chat.py", title="Chat", url_path="chat"),
     st.Page("views/claim_status.py", title="Claim status", url_path="status"),
+    st.Page("views/legal.py", title="Privacy and terms", url_path="privacy", visibility="hidden"),
 ]
 st.navigation(pages, position="top").run()
