@@ -43,18 +43,12 @@ PROBES = {
 }
 
 
-def fake_handover(claim, reason, conversation, usage):
-    """Nothing is written to the claims log during a test."""
-    return {"filed": True, "claim_id": "TEST-HANDOVER", "status": "awaiting_adjuster",
-            "customer_message": "A claims handler will take over."}
-
-
 def tools_called(chat, since):
     return [e["name"] for e in chat.events[since:] if e["kind"] == "tool"]
 
 
 def run_story(photos):
-    chat, turns, seconds = agent.Chat(), [], []
+    chat, turns, seconds = agent.Chat(dry_run=True), [], []
     for text, slot in STORY:
         if chat.ended or (chat.ready_to_file and chat.awaiting_confirmation):
             break
@@ -82,7 +76,7 @@ def run_story(photos):
 
 
 def run_probe(name, text):
-    chat = agent.Chat()
+    chat = agent.Chat(dry_run=True)
     started = time.time()
     reply = agent.respond(chat, text)
     events = chat.events
@@ -105,7 +99,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", default=CANDIDATES)
     args = parser.parse_args()
-    agent.file_handover = fake_handover
     _, photo_list = demo.load_set("large")
     photos = {p["slot"]: p for p in photo_list}
 

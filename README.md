@@ -44,6 +44,16 @@ The model decides what to ask and how to phrase it (`prompts/assistant_system.md
 - After 25 customer messages a person takes over. After two messages in a row that don't move the claim forward, the app offers a person.
 - Amounts of money are removed from replies until the claim is decided, and so are the prompt's own markers and tool names.
 
+## Insurer dashboard
+
+The Dashboard page (under Insurer in the top menu) reads the claims log. It shows:
+- The share settled automatically, the share sent to a person, and the average time from filing to decision.
+- How many claims are waiting for a handler, the time to check a claim, and the model cost per claim.
+- Charts of the outcome by channel, fraud flags by reason and claims per day, each with a table view.
+- Form and chat compared, and every claim with a link to its status page.
+
+One filter row at the top (period and channels) applies to everything below it. Batch tests are left out unless you select them. The insurer pages are built for a laptop screen.
+
 ## Chat model comparison
 
 ```bash
@@ -110,3 +120,17 @@ The comparison scores each model on **parts found** (F1 against `true_parts`), *
 ## Prompts
 
 Every prompt sent to a model is a file in `prompts/`.
+
+## Limitations
+
+What the prototype does not do:
+- **No real insurance.** Policies are fictional, no money is paid, and part prices are placeholders until sourced Dutch figures are in.
+- **One kind of claim.** Car damage under an existing policy only. Injury, theft, disputes and total losses go to a person.
+- **Photos only.** Damage is judged from photos, so hidden damage (behind panels, mechanical) can't be seen. The model says when it suspects it.
+- **Variable estimates.** The same photos can get a different estimate on another run (we saw €826 and €1,327 for one claim), so the auto-settle limit and confidence threshold have to be set with that in mind.
+- **Weak fraud checks.** The fraud signals flag claims for a person to look at; they prove nothing. Missing camera metadata is common in honest photos too (messaging apps strip it).
+- **No claims-handler tools yet.** Routed claims wait in the log; there is no queue page to approve, change or reject them yet.
+- **Local, temporary data.** Claims are stored in local files. On Streamlit Cloud they disappear when the app restarts.
+- **No accounts.** One shared team password protects the deployed link; there are no customer logins.
+- **Guardrail tests not run yet.** `data/guardrail_tests.csv` (17 messages) and `core/guardrails.py` are ready but haven't been run.
+

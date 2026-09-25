@@ -46,7 +46,7 @@ p, li, label { color: var(--ink); }
 [class*="st-key-band-hero-home"] { min-height: calc(100vh - 60px); padding-top: 5rem; padding-bottom: 5rem; }
 [class*="st-key-band-hero-page"] { min-height: 380px; padding-top: 4.5rem; padding-bottom: 8.5rem; justify-content: flex-end !important; }
 [class*="st-key-band-hero-cta"] { min-height: 480px; }
-[class*="st-key-band-tight"] { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+[class*="st-key-band-"][class*="-tight-"] { padding-top: 3.5rem; padding-bottom: 3.5rem; }
 
 /* Media layer: the first element of a hero band fills it (photo, video on top once it plays) */
 [class*="st-key-band-hero"] > .stElementContainer:first-child {
@@ -184,7 +184,7 @@ p, li, label { color: var(--ink); }
 .ca-table th { text-align: left; font-weight: 500; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
   padding: 0 1rem .7rem 0; border-bottom: 1px solid var(--ink); }
 .ca-table td { padding: .8rem 1rem .8rem 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink); }
-.ca-table td.num, .ca-table th.num { text-align: right; padding-right: 0; font-family: var(--mono); }
+.ca-table td.num, .ca-table th.num { text-align: right; padding-right: 0; font-variant-numeric: tabular-nums; }
 .ca-outcome { margin-top: 1.6rem; border: 1px solid var(--ink); padding: 1.2rem 1.4rem; }
 .ca-outcome .k { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .ca-outcome .v { font-family: var(--serif); font-size: 1.5rem; margin: .3rem 0 .4rem; color: var(--ink); }
@@ -339,6 +339,31 @@ p, li, label { color: var(--ink); }
 .ca-log pre.args { color: var(--on-dark-soft); }
 .ca-empty { color: var(--on-dark-soft); font-size: .84rem; padding: .7rem 0; border-top: 1px solid var(--line-dark); }
 
+/* --- Insurer pages -------------------------------------------------------------------------------------------- */
+[class*="st-key-band-paper-dash-body"] { padding-top: 2.2rem; gap: 1.2rem; }
+.ca-titlebar { display: flex; align-items: baseline; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
+  border-bottom: 1px solid var(--line); padding-bottom: 1rem; }
+.ca-titlebar h1 { font-family: var(--serif); font-weight: 400 !important; font-size: 2.2rem; margin: 0; padding: 0; line-height: 1.1; }
+.ca-titlebar .meta { font-size: .85rem; color: var(--muted); }
+.ca-titlebar .meta b { font-weight: 500; color: var(--ink); }
+[class*="st-key-band-paper-tight-footer-slim"] { padding-top: 1.2rem; padding-bottom: 1.6rem; border-top: 1px solid var(--line); }
+.ca-footline { font-size: .82rem; color: var(--muted); margin: 0; }
+[class*="st-key-band-paper-tight-footer-slim"] [data-testid="stPageLink"] a { padding: 0; background: none; }
+[class*="st-key-band-paper-tight-footer-slim"] [data-testid="stPageLink"] p { font-size: .82rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.st-key-dash-filters { gap: 2rem; }
+.ca-kpis { display: grid; grid-template-columns: 1fr 2.2fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.ca-hero-figure, .ca-tile { background: var(--surface); padding: 1.6rem 1.8rem; }
+.ca-hero-figure p, .ca-tile p { font-size: .82rem; color: var(--muted); margin: 0 0 .5rem; }
+.ca-hero-figure b { display: block; font-family: var(--sans); font-weight: 600; font-size: 4rem; line-height: 1; color: var(--ink); letter-spacing: -.02em; }
+.ca-hero-figure span, .ca-tile span { display: block; font-size: .82rem; color: var(--muted); margin-top: .6rem; line-height: 1.5; }
+.ca-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); }
+.ca-tile b { display: block; font-family: var(--sans); font-weight: 600; font-size: 1.7rem; line-height: 1.1; color: var(--ink); }
+.ca-chart-title { font-family: var(--serif); font-size: 1.3rem; color: var(--ink); margin: 0; }
+[class*="st-key-card-chart"] .ca-small, [class*="st-key-card-recent"] .ca-small { margin: .2rem 0 .4rem; }
+.ca-table td.num { font-variant-numeric: tabular-nums; }
+.ca-table-wrap { overflow-x: auto; }
+.ca-table-wrap .ca-table { min-width: 640px; }
+
 /* --- Legal page --------------------------------------------------------------------------------------------- */
 .ca-legal { max-width: 46rem; }
 .ca-legal h2 { font-family: var(--serif); font-weight: 500; font-size: 1.5rem; margin: 2.6rem 0 .8rem; color: var(--ink); }
@@ -373,7 +398,9 @@ html.ca-motion [data-reveal] { opacity: 0; }
   [class*="st-key-band-hero-home"] { min-height: auto; padding-top: 4rem; padding-bottom: 4.5rem; }
   [class*="st-key-band-hero-page"] { padding-bottom: 7rem; }
   .ca-media::after { background-image: none; background-color: rgba(11, 22, 35, .7); }
-  .ca-how, .ca-case, .ca-footer { grid-template-columns: 1fr; gap: 2rem; }
+  .ca-how, .ca-case, .ca-footer, .ca-kpis { grid-template-columns: 1fr; gap: 2rem; }
+  .ca-kpis { gap: 1px; }
+  .ca-tiles { grid-template-columns: 1fr 1fr; }
   .ca-how-media { display: none; }
   .ca-how-step { grid-template-columns: 3rem 1fr; padding-bottom: 2.5rem; }
   .ca-how-step .inline { display: block; height: 220px; margin-bottom: 1.2rem; grid-column: 1 / -1; }

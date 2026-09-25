@@ -140,7 +140,15 @@ def small_heading(text):
 
 
 # --- Footer and access ------------------------------------------------------------------
-def footer():
+def footer(slim=False):
+    """The site footer. slim=True: one line for the internal (insurer) pages."""
+    if slim:
+        with band("paper", "tight-footer-slim"):
+            with st.container(horizontal=True, gap="medium", vertical_alignment="center"):
+                st.html(f"<p class='ca-footline'>{APP_NAME} prototype, RSM AI Strategy Lab. Fictional policies "
+                        "and test data.</p>")
+                st.page_link("views/legal.py", label="Privacy and terms")
+        return
     seen, credits = set(), []
     for _, name, username in PHOTOS.values():
         if username not in seen:

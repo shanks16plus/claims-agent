@@ -85,6 +85,7 @@ class Chat:
     idle_turns: int = 0                               # customer messages in a row with no checklist progress
     awaiting_confirmation: bool = False
     filed: dict | None = None                         # the filing result once the claim is filed or handed over
+    dry_run: bool = False                             # tests: a handover is not written to the claims log
 
     def __post_init__(self):
         self.messages.append({"role": "assistant", "content": GREETING})
@@ -147,7 +148,11 @@ def respond(chat, text, attachment_ids=(), on_event=None):
 
 def hand_over(chat, reason, on_event=None, by_model=False):
     """A person takes over: file what we have, end the chat. Returns the message for the customer."""
-    result = file_handover(chat.claim, reason, chat.transcript, chat.usage)
+    if chat.dry_run:
+        result = {"filed": True, "claim_id": "TEST-HANDOVER", "status": "awaiting_adjuster",
+                  "customer_message": "A claims handler will take over your claim and contact you."}
+    else:
+        result = file_handover(chat.claim, reason, chat.transcript, chat.usage)
     chat.filed = {**result, "decision": "route_to_human", "handover": reason}
     if not by_model:
         _event(chat, on_event, "code", "hand_over_to_human", {"reason": reason}, result)

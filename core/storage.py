@@ -146,3 +146,42 @@ def log_override(claim_id, action, amount_before, amount_after, note):
             "VALUES (?, ?, ?, ?, ?, ?)",
             (claim_id, now(), action, amount_before, amount_after, note),
         )
+
+
+def list_claims(statuses=None, since=None, until=None):
+    """Claims newest first, optionally filtered by status and by filing date (ISO strings, inclusive)."""
+    query, params = "SELECT * FROM claims WHERE 1=1", []
+    if statuses:
+        query += f" AND status IN ({', '.join('?' for _ in statuses)})"
+        params += list(statuses)
+    if since:
+        query += " AND filed_at >= ?"
+        params.append(since)
+    if until:
+        query += " AND filed_at <= ?"
+        params.append(until + "T23:59:59")
+    with connect() as conn:
+        rows = conn.execute(query + " ORDER BY filed_at DESC", params).fetchall()
+    claims = []
+    for row in rows:
+        claim = dict(row)
+        for col in ("fraud_reasons", "details"):
+            if claim[col]:
+                claim[col] = json.loads(claim[col])
+        claims.append(claim)
+    return claims
+
+
+def record_decision(claim_id, status, payout_eur):
+    """A claims handler's decision: new status, final payout and the decision time."""
+    with connect() as conn:
+        conn.execute("UPDATE claims SET status = ?, payout_eur = ?, decided_at = ? WHERE claim_id = ?",
+                     (status, payout_eur, now(), claim_id))
+
+
+def list_overrides(claim_id=None):
+    query, params = "SELECT * FROM overrides", []
+    if claim_id:
+        query, params = query + " WHERE claim_id = ?", [claim_id]
+    with connect() as conn:
+        return [dict(row) for row in conn.execute(query + " ORDER BY at DESC", params).fetchall()]
