@@ -1,9 +1,9 @@
 {
-  "label": "Small claim: scraped bumper while parking",
+  "label": "Small claim: scraped rear bumper while parking",
   "policy_number": "NL-100001",
-  "what_happened": "I scraped a low wall while parking. The front right wing and the corner of the front bumper are scratched.",
+  "what_happened": "I reversed into a low post while parking. The left corner of the rear bumper is scratched and the paint is chipped.",
   "incident_place": "Rotterdam, Westblaak car park",
   "other_party_involved": false,
   "drivable": true,
-  "credit": "Photo by Volodymyr Dobrovolskyy on Unsplash (4gxI7gj0l2s), cropped for the close-up. The plate is a generated drawing."
+  "credit": "Photo by AVDLCZ on Wikimedia Commons (CC0, commons.wikimedia.org/wiki/File:Škoda_Roomster_Blue_Dented.jpg), cropped for the close-up and plate."
 }

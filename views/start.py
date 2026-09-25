@@ -67,8 +67,9 @@ if DEMO.exists():
                 "photos, confirms, and gets a decision. Nothing is sped up.", index="03")
         show("<div class='ca-demo' data-reveal='up'><div class='ca-video demo' data-src='app/static/demo.mp4' "
              "data-controls='1'><img alt='' src='app/static/demo_poster.jpg'></div></div>"
-             "<p class='ca-small' style='margin-top:.8rem'>Recorded with the demo policy NL-100001 and the "
-             "small-claim demo photos.</p>")
+             "<p class='ca-small' style='margin-top:.8rem'>Recorded on 25 September 2026 with the fictional demo "
+             "policy NL-100001. The car photo is by AVDLCZ on Wikimedia Commons (CC0); the close-up and plate are "
+             "crops of it. The model calls and the decision are real.</p>")
 
 # --- How a claim is decided: the governance split, drawn as a live diagram -----------------------------------
 FLOW_SVG = """<svg viewBox='0 0 1100 300' role='img' aria-label='Your photos and story go to the AI, which assesses the damage.

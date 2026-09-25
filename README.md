@@ -63,7 +63,7 @@ Costs include the photo checks. The advice probe for GLM and Haiku was re-scored
 
 ## Demo video
 
-The home page shows a screen recording of a claim filed through the chat, once `static/demo.mp4` exists. To record it, start the app and run:
+The home page shows a screen recording of a claim filed through the chat (`static/demo.mp4`). The current one uses the small-claim demo set (a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata) and was settled on the spot: estimate €1,326.76, payout €1,076.76. To record a new one, start the app and run:
 
 ```bash
 python scripts/record_demo.py --set small_clean   # needs Playwright (pip install playwright) and Google Chrome

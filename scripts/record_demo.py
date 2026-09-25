@@ -105,9 +105,7 @@ def record(base_url, set_name, video_dir):
         context = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1,
                                       record_video_dir=str(video_dir), record_video_size={"width": 1440, "height": 900})
         page = context.new_page()
-        page.goto(base_url, wait_until="networkidle")
-        page.wait_for_timeout(3500)                               # the hero: headline, video
-        page.get_by_role("button", name="Chat with the assistant").first.click()
+        page.goto(f"{base_url}/chat", wait_until="networkidle")
         page.locator('[class*="st-key-msg-assistant"]').first.wait_for()
         page.wait_for_timeout(1500)
         page.locator('[class*="st-key-sidepanel"] [data-testid="stSelectbox"]').click()
@@ -147,7 +145,7 @@ def main():
                         "-preset", "slow", "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an",
                         str(out)], check=True)
     poster = out.with_name(out.stem + "_poster.jpg")
-    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-ss", "2", "-i", str(out), "-frames:v", "1", "-q:v", "3",
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-ss", "3", "-i", str(out), "-frames:v", "1", "-q:v", "3",
                     str(poster)], check=True)
     print(f"Saved {out} ({out.stat().st_size / 1e6:.1f} MB) and {poster.name}")
 
