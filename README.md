@@ -71,15 +71,20 @@ It plays the same customer through each model: the full claim with the demo phot
 
 Costs include the photo checks. The advice probe for GLM and Haiku was re-scored by reading the replies: the first version of the check counted "I can't say whether it's covered" as advice. Gemini 3.7 Flash also leads the public τ²-bench airline leaderboard for tool-calling agents (80.6% vs 67.0% for Haiku 4.5). GLM and MiMo wrote em dashes, which the reply check now removes.
 
-## Demo video
+## Demo videos
 
-The home page shows a screen recording of a claim filed through the chat (`static/demo.mp4`). The current one uses the small-claim demo set (a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata) and was settled on the spot: estimate €1,326.76, payout €1,076.76. To record a new one, start the app and run:
+The home page shows three screen recordings, one per part of the product (`static/demo_<flow>.mp4`):
+- **Chat:** a claim filed through the chat assistant, settled on the spot (estimate €1,326.76, payout €1,076.76).
+- **Form:** the same kind of claim through the form, settled on the spot (estimate €1,021.24, payout €771.24).
+- **Insurer dashboard:** the dashboard with those claims in it.
+
+The claims use the small-claim demo set: a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata. To record them again, start the app and run:
 
 ```bash
-python scripts/record_demo.py --set small_clean   # needs Playwright (pip install playwright) and Google Chrome
+python scripts/record_demo.py --flow chat        # or form, or dashboard; needs Playwright and Google Chrome
 ```
 
-It drives Chrome like a customer, with real model calls (a few cents), so the outcome is whatever the rules decide.
+The recorder drives Chrome like a person would, with real model calls (a few cents for chat and form), so the outcome is whatever the rules decide.
 
 ## Look and feel
 

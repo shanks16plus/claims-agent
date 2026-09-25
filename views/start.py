@@ -58,18 +58,28 @@ with band("ink", "streets"):
                     for key in ["canal", "cafe", "street", "status", "canal_trees", "form"] * 2)
     show(f"<div class='ca-strip' data-reveal='fade' data-delay='0.3'><div class='track'>{strip}</div></div>")
 
-# --- See it in action: an unedited screen recording of a claim filed through the chat -------------------------
-DEMO = config.ROOT / "static" / "demo.mp4"
-if DEMO.exists():
+# --- See it in action: unedited screen recordings, one per part of the product ---------------------------------
+DEMOS = {
+    "Chat": ("demo_chat", "A claim filed through the chat assistant and settled on the spot: estimate €1,326.76, "
+                          "payout €1,076.76 after the deductible."),
+    "Form": ("demo_form", "The same kind of claim through the form, also settled on the spot: estimate €1,021.24, "
+                          "payout €771.24."),
+    "Insurer dashboard": ("demo_dashboard", "What the insurer sees: every claim, what the rules decided, fraud "
+                                            "flags and the model cost per claim."),
+}
+available = {label: demo for label, demo in DEMOS.items() if (config.ROOT / "static" / f"{demo[0]}.mp4").exists()}
+if available:
     with band("stone", "demo"):
-        heading("See it in action", "A claim filed through the chat, start to finish",
-                "An unedited screen recording of the prototype: the customer answers a few questions, sends three "
-                "photos, confirms, and gets a decision. Nothing is sped up.", index="03")
-        show("<div class='ca-demo' data-reveal='up'><div class='ca-video demo' data-src='app/static/demo.mp4' "
-             "data-controls='1'><img alt='' src='app/static/demo_poster.jpg'></div></div>"
-             "<p class='ca-small' style='margin-top:.8rem'>Recorded on 25 September 2026 with the fictional demo "
-             "policy NL-100001. The car photo is by AVDLCZ on Wikimedia Commons (CC0); the close-up and plate are "
-             "crops of it. The model calls and the decision are real.</p>")
+        heading("See it in action", "The prototype at work, start to finish",
+                "Unedited screen recordings with real model calls: a claim through the chat, the same kind of claim "
+                "through the form, and what the insurer sees. Nothing is sped up.", index="03")
+        pick = st.segmented_control("Recording", list(available), default=next(iter(available)), required=True,
+                                    label_visibility="collapsed", key="demo_pick")
+        name, caption = available[pick]
+        show(f"<div class='ca-demo' data-reveal='fade'><div class='ca-video demo' data-src='app/static/{name}.mp4' "
+             f"data-controls='1'><img alt='' src='app/static/{name}_poster.jpg'></div></div>"
+             f"<p class='ca-small' style='margin-top:.8rem'>{caption} Recorded on 25 September 2026 with the "
+             "fictional demo policy NL-100001. The car photo is by AVDLCZ on Wikimedia Commons (CC0).</p>")
 
 # --- How a claim is decided: the governance split, drawn as a live diagram -----------------------------------
 FLOW_SVG = """<svg viewBox='0 0 1100 300' role='img' aria-label='Your photos and story go to the AI, which assesses the damage.
