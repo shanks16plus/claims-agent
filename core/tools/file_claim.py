@@ -7,6 +7,7 @@ from core import checklist, config, images, storage
 from core.tools.decide import ROUTE, money
 
 CLAIMS_DIR = config.RUNTIME / "claims"
+AI_SIGNALS = {"ai_content_credentials", "ai_detector_likely", "ai_detector_possible", "possible_manipulation"}
 
 
 def file_claim(claim, results, usage):
@@ -127,6 +128,16 @@ def adjuster_file(claim, results):
 
     lines += ["", f"## Fraud check: {fraud['risk']} risk ({fraud['points']} points)"]
     lines += [f"- {s['detail']} (+{s['points']})" for s in fraud["signals"]] or ["- No signals"]
+    detector = fraud.get("ai_detector") or {}
+    if detector.get("configured"):
+        scores = ", ".join(f"{name} {score:.0%}" for name, score in detector["scores"].items())
+        lines += [f"AI-image detector (Sightengine): {scores or 'no score'}"]
+    else:
+        lines += ["AI-image detector: not switched on"]
+    if any(s["code"] in AI_SIGNALS for s in fraud["signals"]):
+        lines += ["To check for a SynthID watermark (images from Google's AI tools and other SynthID adopters), "
+                  "upload the photo to the Gemini app and ask whether it was made with AI. There is no public "
+                  "API for this check yet."]
     lines += ["", "## Photos", *[f"- {p['slot']}: {p['name']}" for p in claim["photos"]]]
     return "\n".join(lines) + "\n"
 

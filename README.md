@@ -30,11 +30,15 @@ Business rules, fraud points and prices per model are in `core/config.py`. Part 
 streamlit run app.py
 ```
 
-Opens at http://localhost:8501. The team password (`APP_PASSWORD`) only applies to the deployed link, not to local runs. In the claim form, "Demo: fill in a ready-made claim" loads a claim with photos, so no uploads are needed.
+Opens at http://localhost:8501. The team password (`APP_PASSWORD`) only applies to the deployed link, not to local runs. To test, use the details and photos in `test_kit/` (see below).
+
+## Test kit
+
+`test_kit/` is what testers get: five scenario folders with photos (small claim, large claim, suspicious claim, an AI-generated photo, a photo with a hidden instruction) and `READ ME FIRST.txt` with the details to type in and what should happen. Zip it and share it. The app itself has no demo shortcuts: testers type and upload like a customer would. (The screen recorder uses a hidden `?demo=1` switch that brings back the ready-made demo claims.)
 
 ## The chat assistant
 
-The Chat page is the claims assistant: a conversation on the left and, on the right, what the agent is doing (the claim checklist, every tool call and every guardrail), so an audience can watch it work. "Send ready-made photos" posts the demo photo sets into the chat, so a live demo needs no uploads.
+The Chat page is the claims assistant: a conversation on the left and, on the right, what the agent is doing (the claim checklist, every tool call and every guardrail), so an audience can watch it work.
 
 The model decides what to ask and how to phrase it (`prompts/assistant_system.md`). Everything that matters is enforced in code (`core/agent.py`):
 - It can only call five tools: `lookup_policy`, `check_photo_quality`, `record_answer`, `hand_over_to_human` and `file_claim`. The last one runs the fixed pipeline (assess, price, fraud check, decide, file).
@@ -43,6 +47,17 @@ The model decides what to ask and how to phrase it (`prompts/assistant_system.md
 - An injury, theft, a dispute, an upset customer or a request for a person hands the claim to a claims handler.
 - After 25 customer messages a person takes over. After two messages in a row that don't move the claim forward, the app offers a person.
 - Amounts of money are removed from replies until the claim is decided, and so are the prompt's own markers and tool names.
+
+## AI-generated photos
+
+The fraud check looks for AI-generated photos in three ways (`core/provenance.py`):
+1. **Content Credentials (C2PA):** a signed record that tools like ChatGPT and Adobe Firefly attach to the images they make. Read with the official `c2pa-python` library. A photo that says it was made with AI adds 4 points, which is high risk, so it goes to a person.
+2. **IPTC metadata:** the "digital source type" tag that Google and others write into generated images. Same result.
+3. **AI-image detector (optional):** Sightengine's model judges the pixels. It catches screenshots and re-saved copies, which lose their metadata. A score of 90% or more adds 3 points (medium risk, goes to a person); 60% or more adds 1. To switch it on, create a free account at sightengine.com and add `SIGHTENGINE_API_USER` and `SIGHTENGINE_API_SECRET` to `.env` (or the Streamlit secrets).
+
+The fraud model also looks for visible signs of editing or generation (a weak signal, 1 point). Google's SynthID watermark can't be checked automatically: there is no public API yet. When a claim has an AI-related flag, the adjuster file says how to check it by hand in the Gemini app.
+
+Test photos: `data/guardrail_assets/ai_generated_c2pa.jpg` (Content Credentials signed with the C2PA project's public test certificate) and `ai_generated_iptc.jpg` (IPTC tag). Both are our own synthetic drawing, labelled as AI-made.
 
 ## Insurer dashboard
 
@@ -134,6 +149,7 @@ What the prototype does not do:
 - **Photos only.** Damage is judged from photos, so hidden damage (behind panels, mechanical) can't be seen. The model says when it suspects it.
 - **Variable estimates.** The same photos can get a different estimate on another run (we saw €826 and €1,327 for one claim), so the auto-settle limit and confidence threshold have to be set with that in mind.
 - **Weak fraud checks.** The fraud signals flag claims for a person to look at; they prove nothing. Missing camera metadata is common in honest photos too (messaging apps strip it).
+- **AI photos are only partly caught.** Content Credentials and metadata are lost in screenshots and re-saves; the optional detector is the backstop but can be wrong both ways; SynthID can only be checked by hand.
 - **No claims-handler tools yet.** Routed claims wait in the log; there is no queue page to approve, change or reject them yet.
 - **Local, temporary data.** Claims are stored in local files. On Streamlit Cloud they disappear when the app restarts.
 - **No accounts.** One shared team password protects the deployed link; there are no customer logins.

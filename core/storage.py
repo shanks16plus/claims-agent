@@ -185,3 +185,21 @@ def list_overrides(claim_id=None):
         query, params = query + " WHERE claim_id = ?", [claim_id]
     with connect() as conn:
         return [dict(row) for row in conn.execute(query + " ORDER BY at DESC", params).fetchall()]
+
+
+SEED_LOG = config.DATA / "seed_log" / "claims.jsonl"
+
+
+def seed_if_empty():
+    """Load our recorded test runs into an empty claims log, so a fresh deployment's dashboard isn't blank.
+    Seeded claims carry details["seeded_from"]. Their photo hashes are not loaded: the demo photos are
+    exempt from the duplicate check anyway (see check_fraud)."""
+    if not SEED_LOG.exists():
+        return 0
+    with connect() as conn:
+        if conn.execute("SELECT COUNT(*) FROM claims").fetchone()[0]:
+            return 0
+    rows = [json.loads(line) for line in SEED_LOG.read_text(encoding="utf-8").splitlines() if line.strip()]
+    for row in rows:
+        save_claim(row)
+    return len(rows)

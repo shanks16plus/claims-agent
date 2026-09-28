@@ -1,5 +1,5 @@
 """Privacy notice and terms of use for the prototype. Plain statements of what the code actually does."""
-from core import config
+from core import config, provenance
 from ui import theme
 from ui.theme import band, show
 
@@ -31,7 +31,8 @@ not your own personal details or a real claim.</p>
 
 <h2>Photos</h2>
 <p>Before a photo is stored, we read three pieces of its metadata: the editing software, the camera make and model,
-and the time it was taken. We use these only to check whether a photo may have been edited. We then save a copy
+and the time it was taken, and we check whether the file says it was made with AI (Content Credentials or IPTC
+metadata). We use these only to check whether a photo may have been edited or generated. We then save a copy
 without any metadata, so location (GPS) data is never stored.</p>
 
 <h2>How AI models are used</h2>
@@ -40,6 +41,7 @@ without any metadata, so location (GPS) data is never stored.</p>
 <li>{model_name(config.MODEL_FOR["chat"])} runs the chat assistant and checks whether photos are usable.</li>
 <li>{model_name(config.MODEL_FOR["assess_damage"])} assesses the damage in the photos.</li>
 <li>{model_name(config.MODEL_FOR["fraud_review"])} checks whether the photos match the description.</li>
+{"<li>Sightengine checks whether a photo looks AI-generated.</li>" if provenance.detector_configured() else ""}
 </ul>
 <p>The models give an assessment. They do not decide whether a claim is paid.</p>
 

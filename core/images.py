@@ -6,7 +6,7 @@ from pathlib import Path
 import imagehash
 from PIL import Image, ImageOps
 
-from core import config
+from core import config, provenance
 
 EXIF_SUB_IFD = 0x8769
 TAG_SOFTWARE, TAG_MAKE, TAG_MODEL, TAG_DATETIME, TAG_DATETIME_ORIGINAL = 305, 271, 272, 306, 36867
@@ -19,7 +19,10 @@ def _open(source):
 
 
 def read_metadata(source):
-    """Return only software, camera and capture time. GPS is never read or stored."""
+    """Return only software, camera, capture time and whether the file says it was made with AI.
+    GPS is never read or stored."""
+    raw = bytes(source) if isinstance(source, (bytes, bytearray)) else Path(source).read_bytes()
+    credentials = provenance.content_credentials(raw)
     img = _open(source)
     exif = img.getexif()
     sub = exif.get_ifd(EXIF_SUB_IFD) if exif else {}
@@ -31,6 +34,9 @@ def read_metadata(source):
         "software": str(software).strip(),
         "camera": camera,
         "taken_at": str(taken_at),
+        "ai_declared": credentials["ai_declared"],
+        "ai_declared_detail": credentials["detail"],
+        "content_credentials": credentials["has_credentials"],
     }
 
 

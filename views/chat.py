@@ -85,7 +85,7 @@ with band("paper", "chat-body"), lift("chat"):
 
     # Behind the scenes: built first so the agent can update it while it works
     with right, st.container(key="sidepanel"):
-        sets = demo.list_sets()
+        sets = demo.list_sets() if theme.demo_mode() else {}
         demo_send = None
         if sets and not chat.ended:
             show("<div class='ca-label'><b>Demo</b>Send ready-made photos</div>")

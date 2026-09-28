@@ -1,10 +1,19 @@
 """Entry point: theme, team password (deployed link only) and page navigation."""
 import streamlit as st
 
+from core import storage
 from ui import theme
+
+
+@st.cache_resource
+def seed_claims_log():
+    """Once per server start: an empty claims log gets our recorded test runs."""
+    return storage.seed_if_empty()
+
 
 st.set_page_config(page_title=theme.APP_NAME, page_icon=":material/directions_car:", layout="wide")
 theme.apply()
+seed_claims_log()
 
 if not theme.password_gate():
     st.stop()

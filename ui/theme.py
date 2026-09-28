@@ -49,6 +49,12 @@ def esc(text):
 
 
 # --- Layout ---------------------------------------------------------------------------
+def demo_mode():
+    """Hidden developer switch for the screen recordings (scripts/record_demo.py): ?demo=1 in the URL shows the
+    ready-made demo claims. Everyone else types the details and uploads photos, like a customer (see test_kit/)."""
+    return st.query_params.get("demo") == "1"
+
+
 def band(tone, name):
     """A full-width section. Tones: paper, surface, stone, ink, night, hero-home, hero-page, hero-cta.
     Start the name with "tight" for less padding."""

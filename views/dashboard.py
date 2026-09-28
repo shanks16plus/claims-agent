@@ -11,6 +11,9 @@ from ui.theme import band, card, esc, show
 CHANNELS = {"form": "Form", "chat": "Chat", "batch": "Batch test"}
 PERIODS = {"Last 7 days": 7, "Last 30 days": 30, "All time": None}
 FRAUD_LABELS = {
+    "ai_content_credentials": "Photo labelled as AI-made",
+    "ai_detector_likely": "AI detector: likely generated",
+    "ai_detector_possible": "AI detector: possibly generated",
     "duplicate_photo": "Photo seen in an earlier claim",
     "incident_before_policy_start": "Incident before the policy started",
     "editing_software": "Photo saved with editing software",
@@ -76,14 +79,16 @@ def table_view(df, key):
 
 # --- Page -------------------------------------------------------------------------------------------------
 with band("paper", "dash-body"):
-    in_log = len(storage.list_claims())
+    log = storage.list_claims()
+    seeded = sum(1 for c in log if (c["details"] or {}).get("seeded_from"))
+    note = f" ({seeded} from our recorded test runs, 24 to 25 September)" if seeded else ""
     show("<div class='ca-titlebar'><div><div class='ca-label' style='margin:0 0 .5rem'>Insurer</div>"
          "<h1>Dashboard</h1></div><div class='meta'>Updated <b>" + datetime.now().strftime("%H:%M") +
-         f"</b> &middot; {in_log} claims in the log</div></div>")
+         f"</b> &middot; {len(log)} claims in the log{note}</div></div>")
 
     # One filter row, above everything it scopes
     with st.container(horizontal=True, gap="medium", key="dash-filters", vertical_alignment="bottom"):
-        period = st.segmented_control("Period", list(PERIODS), default="Last 7 days", required=True)
+        period = st.segmented_control("Period", list(PERIODS), default="All time", required=True)
         picked = st.segmented_control("Channels", list(CHANNELS.values()), default=list(CHANNELS.values()),
                                       selection_mode="multi")
     days = PERIODS[period]

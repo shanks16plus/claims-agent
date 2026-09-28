@@ -79,6 +79,9 @@ SEVERITY_FACTOR = {"minor": 0.6, "moderate": 1.0, "severe": 1.5}
 # --- Fraud scoring ----------------------------------------------------------
 # Each signal adds points. Total >= HIGH -> high risk, >= MEDIUM -> medium risk.
 FRAUD_POINTS = {
+    "ai_content_credentials": 4,    # the photo's own Content Credentials or metadata say it was made with AI
+    "ai_detector_likely": 3,        # the AI-image detector is at least AI_DETECTOR_LIKELY sure
+    "ai_detector_possible": 1,      # weak: at least AI_DETECTOR_POSSIBLE
     "duplicate_photo": 4,
     "incident_before_policy_start": 4,
     "editing_software": 3,
@@ -92,6 +95,11 @@ FRAUD_POINTS = {
 FRAUD_HIGH = 4
 FRAUD_MEDIUM = 2
 DUPLICATE_MAX_DISTANCE = 6        # perceptual-hash distance that counts as "same photo"
+AI_DETECTOR_LIKELY = 0.90         # Sightengine "ai_generated" score (0 to 1)
+AI_DETECTOR_POSSIBLE = 0.60
+# Optional AI-image detector (free tier at sightengine.com). Leave empty to skip it.
+SIGHTENGINE_API_USER = secret("SIGHTENGINE_API_USER")
+SIGHTENGINE_API_SECRET = secret("SIGHTENGINE_API_SECRET")
 RECENT_POLICY_DAYS = 14
 EDITING_SOFTWARE = [
     "photoshop", "lightroom", "gimp", "snapseed", "picsart", "canva", "affinity",

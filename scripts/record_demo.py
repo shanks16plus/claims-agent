@@ -117,7 +117,7 @@ def scroll_to(page, selector, offset=90, wait=1400):
 
 
 def record_chat(page, base_url, story):
-    page.goto(f"{base_url}/chat", wait_until="networkidle")
+    page.goto(f"{base_url}/chat?demo=1", wait_until="networkidle")
     page.locator('[class*="st-key-msg-assistant"]').first.wait_for()
     page.wait_for_timeout(1500)
     page.locator('[class*="st-key-sidepanel"] [data-testid="stSelectbox"]').click()
@@ -138,7 +138,7 @@ def record_chat(page, base_url, story):
 
 
 def record_form(page, base_url, story):
-    page.goto(f"{base_url}/claim", wait_until="networkidle")
+    page.goto(f"{base_url}/claim?demo=1", wait_until="networkidle")
     page.wait_for_timeout(2500)
     page.get_by_text("Demo: fill in a ready-made claim").click()
     page.wait_for_timeout(700)

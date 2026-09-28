@@ -1,6 +1,6 @@
 """Tool 5: collect fraud signals and turn them into low / medium / high risk.
 Claude only reports observations; the points and thresholds live in config.py."""
-from core import config, images, llm, storage
+from core import config, images, llm, provenance, storage
 from core.tools.assess_damage import photo_content
 
 REVIEW_SCHEMA = {
@@ -30,6 +30,18 @@ def _earlier_photos(source_key):
     return earlier
 
 
+_DEMO_HASHES = []
+
+
+def _demo_photo_hashes():
+    """Hashes of the published demo photos (data/demo_photos, the source of test_kit/), computed once."""
+    if not _DEMO_HASHES:
+        folder = config.DATA / "demo_photos"
+        _DEMO_HASHES.extend(images.photo_hash(p) for p in sorted(folder.rglob("*"))
+                            if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
+    return _DEMO_HASHES
+
+
 def check_fraud(photos, description, policy, source_key, usage=None):
     signals = []
 
@@ -45,13 +57,37 @@ def check_fraud(photos, description, policy, source_key, usage=None):
             add("editing_software", f"{photo['name']} was saved with {meta['software']}")
         if not meta["has_metadata"]:
             missing_meta.append(photo["name"])
+        if meta.get("ai_declared"):
+            add("ai_content_credentials", f"{photo['name']}: {meta['ai_declared_detail']}")
     if missing_meta:
         add("no_photo_metadata", f"No camera metadata in: {', '.join(missing_meta)}")
 
-    # 2. Same or nearly the same photo as an earlier claim
+    # 1b. AI-image detector (optional backstop for screenshots and re-saved copies)
+    detector = {"configured": provenance.detector_configured(), "scores": {}, "errors": []}
+    if detector["configured"]:
+        for photo in photos:
+            scored = provenance.detector_score(photo["path"])
+            if scored["score"] is None:
+                detector["errors"].append(f"{photo['name']}: {scored['error']}")
+            else:
+                detector["scores"][photo["name"]] = round(scored["score"], 3)
+        if detector["scores"]:
+            name, top = max(detector["scores"].items(), key=lambda item: item[1])
+            if top >= config.AI_DETECTOR_LIKELY:
+                add("ai_detector_likely", f"AI-image detector: {name} scores {top:.0%} AI-generated")
+            elif top >= config.AI_DETECTOR_POSSIBLE:
+                add("ai_detector_possible", f"AI-image detector: {name} scores {top:.0%} AI-generated")
+
+    # 2. Same or nearly the same photo as an earlier claim. Our own demo photos (the test kit) are exempt:
+    #    every tester uploads the same ones, so they would all look like duplicates.
     photo_hashes = [(photo["name"], images.photo_hash(photo["path"])) for photo in photos]
     earlier = _earlier_photos(source_key)
+    demo = _demo_photo_hashes()
+    demo_photos = [name for name, phash in photo_hashes
+                   if any(images.hash_distance(phash, known) <= config.DUPLICATE_MAX_DISTANCE for known in demo)]
     for name, phash in photo_hashes:
+        if name in demo_photos:
+            continue
         for old in earlier:
             if images.hash_distance(phash, old["phash"]) <= config.DUPLICATE_MAX_DISTANCE:
                 add("duplicate_photo", f"{name} matches a photo from earlier claim {old['claim_id']}")
@@ -95,6 +131,8 @@ def check_fraud(photos, description, policy, source_key, usage=None):
         "points": points,
         "signals": signals,
         "review": review,
+        "ai_detector": detector,
+        "demo_photos_not_checked_for_duplicates": demo_photos,
         "complete": error is None,
         "error": error,
         "photo_hashes": photo_hashes,

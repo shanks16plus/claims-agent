@@ -1,5 +1,4 @@
 """The claim form: same checklist and tools as the chat, one step at a time."""
-import json
 import time
 import uuid
 from datetime import date
@@ -106,7 +105,7 @@ def details_step():
     with side:
         show(photo("phone", cls="ca-side-photo", parallax=30, tag="Takes about two minutes"))
     with form_col, card("details"):
-        sets = demo.list_sets()
+        sets = demo.list_sets() if theme.demo_mode() else {}
         if sets:
             with st.expander("Demo: fill in a ready-made claim"):
                 choice = st.selectbox("Demo claim", list(sets), format_func=sets.get, label_visibility="collapsed")
@@ -119,9 +118,6 @@ def details_step():
                         add_photo(f"demo:{photo_['path']}", photo_)
                     claim["source_key"] = f"demo:{choice}"
                     st.rerun()
-        with st.expander("Demo policy numbers"):
-            policies = json.loads((config.DATA / "policies.json").read_text())["policies"]
-            st.markdown("\n".join(f"- `{p['policy_number']}`: {p['demo_use']}" for p in policies))
 
         with st.form("details", border=False):
             policy_number = st.text_input("Policy number", value=claim["policy_number"] or "",
