@@ -69,6 +69,17 @@ The Dashboard page (under Insurer in the top menu) reads the claims log. It show
 
 One filter row at the top (period and channels) applies to everything below it. Batch tests are left out unless you select them. The insurer pages are built for a laptop screen.
 
+## Guardrail tests
+
+```bash
+python scripts/run_guardrails.py --runs 3        # the 17 messages in data/guardrail_tests.csv, three times (about €0.10)
+python scripts/test_code_guardrails.py           # the code guardrails alone, with fake model replies (free)
+```
+
+The first sends each test message (off-topic, advice, amounts, prompt injection, a photo with a hidden instruction, injury, theft, asking for a person, an upset customer, other customers, Dutch) to a fresh chat in dry-run mode. On 28 September 2026 Gemini 3.7 Flash passed 17 of 17 in each of three runs, every time without a code guardrail stepping in.
+
+The second replaces the model with scripted replies, so it tests the code layer on its own. It catches amounts before a decision (€1,250, 1.250 euro, EUR 800, 900 EUR), the prompt's own markers and tool names, the 25-message limit, the offer of a person after two off-topic messages, unknown tools, future dates, and filing without the customer's button. Known gaps, on record in the script: amounts written in words or without a currency, the prompt retold in other words, and false statements (the model can say "your claim is filed" when it isn't; the code blocks the action, not the words).
+
 ## Chat model comparison
 
 ```bash
@@ -153,5 +164,5 @@ What the prototype does not do:
 - **No claims-handler tools yet.** Routed claims wait in the log; there is no queue page to approve, change or reject them yet.
 - **Local, temporary data.** Claims are stored in local files. On Streamlit Cloud they disappear when the app restarts.
 - **No accounts.** One shared team password protects the deployed link; there are no customer logins.
-- **Guardrail tests not run yet.** `data/guardrail_tests.csv` (17 messages) and `core/guardrails.py` are ready but haven't been run.
+- **Guardrails tested on single messages only.** Each test is one message at the start of a chat; attacks in the middle of a claim or spread over several messages aren't tested. See the known gaps under Guardrail tests.
 
