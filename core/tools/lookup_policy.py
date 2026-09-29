@@ -31,6 +31,7 @@ def lookup_policy(policy_number, incident_date=None):
         "start_date": policy["start_date"],
         "vehicle": policy["vehicle"],
         "vehicle_value_eur": policy["vehicle_value_eur"],
+        "registration": policy.get("registration", ""),
         "date_issues": [],
     }
     if incident_date:

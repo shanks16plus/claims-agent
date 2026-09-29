@@ -16,8 +16,10 @@ HOW TO TEST
 3. At the end you see a status page with a claim reference (CLM-...). Send us that
    reference with your feedback (see the bottom of this file).
 
-You can also use photos of a damaged car that you find online instead. You need a wide
-shot of the car, a close-up of the damage and a photo of the number plate.
+You can also try photos of a damaged car that you find online (a wide shot, a close-up of
+the damage and the number plate). With one of our policy numbers they should go to a claims
+handler: the check sees that the car or plate isn't the one on the policy. That's one of
+the things we're testing, so tell us if one gets through.
 
 
 SCENARIO 1: SMALL CLAIM (should be paid on the spot)
@@ -29,8 +31,9 @@ When:            yesterday
 Where:           Rotterdam, Westblaak car park
 Another car?     No
 Still drivable?  Yes
-Expect:          settled on the spot, roughly EUR 550 to 1,100 paid (the estimate varies
-                 between runs).
+Expect:          settled on the spot, about EUR 270 or 770 paid (the AI sometimes counts a
+                 light scuff next to the bumper). Now and then it goes to a claims handler
+                 when the AI is less sure of the damage.
 
 SCENARIO 2: LARGE CLAIM (goes to a claims handler)
 Photos:          folder "2 Large claim (goes to a claims handler)"
@@ -54,7 +57,8 @@ Where:           Rotterdam, Kruisplein car park
 Another car?     Yes
 Still drivable?  Yes
 Expect:          sent to a claims handler: the policy started only days ago, the damage
-                 looks old (rust), and the number plate photo is a drawing.
+                 looks old (rust), the car isn't the Peugeot 208 on the policy, and the
+                 number plate photo is a drawing.
 
 SCENARIO 4: AI-GENERATED PHOTO (goes to a claims handler)
 Photos:          the wide shot from folder "4 AI-generated photo", plus the close-up and

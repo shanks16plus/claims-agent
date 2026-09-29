@@ -383,7 +383,8 @@ def _pipeline_events(chat, on_event, results, filing, seconds):
            {"found": results["policy"].get("found"), "date_issues": results["policy"].get("date_issues")})
     _event(chat, on_event, "code", "assess_damage", {"photos": len(checklist.usable_photos(chat.claim))},
            {"parts": [f"{p['part']} ({p['severity']}, {p['action']})" for p in damage.get("damaged_parts", [])],
-            "confidence": damage.get("confidence"), "error": damage.get("error")})
+            "confidence": damage.get("confidence"), "error": damage.get("error"),
+            **({"looks": damage["looks"], "look_confidences": damage["look_confidences"]} if damage.get("looks") else {})})
     _event(chat, on_event, "code", "check_fraud", {}, {"risk": fraud["risk"], "signals": [s["code"] for s in fraud["signals"]]})
     _event(chat, on_event, "code", "estimate_cost", {},
            {"gross_eur": estimate["gross_eur"], "deductible_eur": estimate["deductible_eur"],

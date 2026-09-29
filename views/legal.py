@@ -40,7 +40,7 @@ without any metadata, so location (GPS) data is never stored.</p>
 <ul>
 <li>{model_name(config.MODEL_FOR["chat"])} runs the chat assistant and checks whether photos are usable.</li>
 <li>{model_name(config.MODEL_FOR["assess_damage"])} assesses the damage in the photos.</li>
-<li>{model_name(config.MODEL_FOR["fraud_review"])} checks whether the photos match the description.</li>
+<li>{model_name(config.MODEL_FOR["fraud_review"])} checks whether the photos match the description and show the car on the policy.</li>
 {"<li>Sightengine checks whether a photo looks AI-generated.</li>" if provenance.detector_configured() else ""}
 </ul>
 <p>The models give an assessment. They do not decide whether a claim is paid.</p>

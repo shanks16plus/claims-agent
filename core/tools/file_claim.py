@@ -110,6 +110,12 @@ def adjuster_file(claim, results):
         lines += ["Policy not found."]
 
     lines += ["", "## Damage", f"Confidence {damage['confidence']:.2f}: {damage['confidence_reason']}"]
+    if damage.get("looks"):
+        lines += [f"Assessed three times because the first estimate was close to the auto-settle limit: "
+                  f"{', '.join(money(e) for e in damage['looks'])} (confidence "
+                  f"{', '.join(f'{c:.2f}' for c in damage['look_confidences'])}). The middle of each is used."]
+    elif damage.get("looks_note"):
+        lines += [damage["looks_note"]]
     if damage.get("hidden_damage_risk"):
         lines += [f"Hidden damage risk: {damage['hidden_damage_risk']}"]
     lines += ["", "| Part | Severity | Action | Mentioned by customer | Evidence |", "|---|---|---|---|---|"]

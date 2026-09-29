@@ -48,6 +48,26 @@ The model decides what to ask and how to phrase it (`prompts/assistant_system.md
 - After 25 customer messages a person takes over. After two messages in a row that don't move the claim forward, the app offers a person.
 - Amounts of money are removed from replies until the claim is decided, and so are the prompt's own markers and tool names.
 
+## Steadier estimates
+
+The model only reports which parts are damaged and how badly. Repair or replace is a rule in code (`REPLACE_FROM` in `core/config.py`): parts the price table can't repair (lights, side and rear windows, the grille) are replaced, the windscreen and mirrors from moderate damage, body panels and bumpers only when severe. Before this rule the model flipped between repair and replace for the same bumper, which moved the estimate by €306.
+
+When the first estimate lands within €500 of the €1,500 auto-settle limit (`EXTRA_LOOKS_MARGIN_EUR`), the photos are assessed twice more and the middle estimate and the middle confidence of the three are used. Claims further from the limit get one assessment, as before. The limit and the 80% confidence bar don't change.
+
+```bash
+python scripts/estimate_spread.py small_clean --runs 5    # the same photos, five times: estimates, confidence, cost
+```
+
+## Photos from the internet
+
+The fraud review is told the make, model and year of the insured car and reads the number plate in the photos, without being told the registration. Code then compares the plate with the policy (`registration` in `data/policies.json`). A different car or plate counts as the existing "photos don't match" signal (3 points, goes to a person), so the fraud scoring is unchanged. On 28 September it caught 6 of the 7 internet photos that don't show the insured car; the miss was a close-up of a light where the car can't be seen.
+
+```bash
+python scripts/check_insured_car.py      # the demo sets and the 8 internet photos, fraud check only
+```
+
+What still gets through: a photo of the same model without a readable plate, and photos that were never online. A reverse image search (Google Cloud Vision web detection) would add a direct check but isn't built.
+
 ## AI-generated photos
 
 The fraud check looks for AI-generated photos in three ways (`core/provenance.py`):
@@ -104,6 +124,8 @@ The home page shows three screen recordings, one per part of the product (`stati
 - **Form:** the same kind of claim through the form, settled on the spot (estimate €1,021.24, payout €771.24).
 - **Insurer dashboard:** the dashboard with those claims in it.
 
+They were recorded before repair or replace became a rule in code. The same claim now prices at €520.30 or €1,021.24 (payout €270.30 or €771.24), depending on whether the model lists a light scuff next to the bumper.
+
 The claims use the small-claim demo set: a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata. To record them again, start the app and run:
 
 ```bash
@@ -158,7 +180,7 @@ What the prototype does not do:
 - **No real insurance.** Policies are fictional, no money is paid, and part prices are placeholders until sourced Dutch figures are in.
 - **One kind of claim.** Car damage under an existing policy only. Injury, theft, disputes and total losses go to a person.
 - **Photos only.** Damage is judged from photos, so hidden damage (behind panels, mechanical) can't be seen. The model says when it suspects it.
-- **Variable estimates.** The same photos can get a different estimate on another run (we saw €826 and €1,327 for one claim), so the auto-settle limit and confidence threshold have to be set with that in mind.
+- **Variable estimates.** The same photos can still get a different estimate on another run: the model lists a light scuff on the next panel about two times in three, so the small demo claim prices at €520 or €1,021. Near the limit, three assessments keep the decision steady (see Steadier estimates). Confidence also varies (0.75 to 0.90 for the same photos), so a claim just above the 80% bar can occasionally go to a person.
 - **Weak fraud checks.** The fraud signals flag claims for a person to look at; they prove nothing. Missing camera metadata is common in honest photos too (messaging apps strip it).
 - **AI photos are only partly caught.** Content Credentials and metadata are lost in screenshots and re-saves; the optional detector is the backstop but can be wrong both ways; SynthID can only be checked by hand.
 - **No claims-handler tools yet.** Routed claims wait in the log; there is no queue page to approve, change or reject them yet.

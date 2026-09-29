@@ -17,7 +17,7 @@ FRAUD_LABELS = {
     "duplicate_photo": "Photo seen in an earlier claim",
     "incident_before_policy_start": "Incident before the policy started",
     "editing_software": "Photo saved with editing software",
-    "story_photo_mismatch": "Story doesn't match the photos",
+    "story_photo_mismatch": "Photos don't match the story or the car",
     "incident_in_future": "Incident date in the future",
     "story_photo_partial_mismatch": "Story partly matches the photos",
     "possible_manipulation": "Photo may be edited or generated",

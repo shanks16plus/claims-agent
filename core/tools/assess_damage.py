@@ -1,6 +1,7 @@
-"""Tool 3: Claude looks at the photos and lists damaged parts. It never prices anything."""
+"""Tool 3: Claude looks at the photos and lists damaged parts. It never prices anything, and it doesn't choose
+repair or replace: that is a business rule in code (estimate_cost.repair_or_replace)."""
 from core import config, images, llm
-from core.tools.estimate_cost import load_prices
+from core.tools.estimate_cost import load_prices, repair_or_replace
 
 PARTS = list(load_prices()) + ["other"]
 SEVERITIES = ["minor", "moderate", "severe"]
@@ -12,11 +13,10 @@ def _schema():
         "properties": {
             "part": {"type": "string", "enum": PARTS},
             "severity": {"type": "string", "enum": SEVERITIES},
-            "action": {"type": "string", "enum": ["repair", "replace"]},
             "evidence": {"type": "string"},
             "mentioned_by_customer": {"type": "boolean"},
         },
-        "required": ["part", "severity", "action", "evidence", "mentioned_by_customer"],
+        "required": ["part", "severity", "evidence", "mentioned_by_customer"],
         "additionalProperties": False,
     }
     return {
@@ -75,12 +75,12 @@ def _clean_parts(parts):
     for item in parts if isinstance(parts, list) else []:
         if not isinstance(item, dict):
             continue
-        valid = (item.get("part") in PARTS and item.get("severity") in SEVERITIES
-                 and item.get("action") in ("repair", "replace"))
+        valid = item.get("part") in PARTS and item.get("severity") in SEVERITIES
+        part, severity = (item["part"], item["severity"]) if valid else ("other", "severe")
         cleaned.append({
-            "part": item["part"] if valid else "other",
-            "severity": item["severity"] if valid else "severe",
-            "action": item["action"] if valid else "replace",
+            "part": part,
+            "severity": severity,
+            "action": repair_or_replace(part, severity),
             "evidence": str(item.get("evidence") or item.get("part") or "Unrecognised output"),
             "mentioned_by_customer": bool(item.get("mentioned_by_customer")),
         })

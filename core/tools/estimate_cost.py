@@ -16,6 +16,17 @@ def load_prices():
     return prices
 
 
+def repair_or_replace(part, severity, prices=None):
+    """The business rule for repair or replace (config.REPLACE_FROM). The model only reports part and severity."""
+    row = (prices or load_prices()).get(part)
+    if row is None:
+        return "replace"                              # unpriced parts go to a person anyway
+    if row["repair_materials_eur"] == 0 and row["labour_hours_repair"] == 0:
+        return "replace"                              # the price table has no repair for this part
+    threshold = config.REPLACE_FROM.get(part, config.REPLACE_FROM_DEFAULT)
+    return "replace" if SEVERITY_RANK[severity] >= SEVERITY_RANK[threshold] else "repair"
+
+
 def _deduplicate(damaged_parts):
     """If a part is listed twice, keep the most severe entry."""
     by_part = {}
@@ -36,7 +47,8 @@ def estimate_cost(damaged_parts, deductible_eur):
             unpriced.append(item.get("evidence") or item["part"])
             continue
         factor = config.SEVERITY_FACTOR[item["severity"]]
-        if item["action"] == "replace":
+        action = repair_or_replace(item["part"], item["severity"], prices)
+        if action == "replace":
             parts_eur = row["replace_part_eur"]
             paint_eur = row["paint_eur"]
             hours = row["labour_hours_replace"]
@@ -47,7 +59,7 @@ def estimate_cost(damaged_parts, deductible_eur):
         labour_eur = hours * row["hourly_rate_eur"]
         lines.append({
             "part": item["part"],
-            "action": item["action"],
+            "action": action,
             "severity": item["severity"],
             "parts_eur": round(parts_eur, 2),
             "paint_eur": round(paint_eur, 2),

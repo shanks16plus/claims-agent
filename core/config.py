@@ -76,6 +76,17 @@ VAT_RATE = 0.21                   # Dutch BTW, added on top of parts_prices.csv 
 # Repair cost scales with severity. Placeholder factors, replace after testing.
 SEVERITY_FACTOR = {"minor": 0.6, "moderate": 1.0, "severe": 1.5}
 
+# Repair or replace is decided here, not by the model (it flipped between the two for the same bumper).
+# A part is replaced from this severity up. Parts the price table can't repair (lights, side and rear
+# windows, the grille) are always replaced.
+REPLACE_FROM = {"windscreen": "moderate", "wing_mirror_left": "moderate", "wing_mirror_right": "moderate"}
+REPLACE_FROM_DEFAULT = "severe"   # body panels, bumpers, wheels
+
+# Near the auto-settle limit, one assessment isn't steady enough: the same photos moved by up to about €500
+# between runs. When the first estimate is this close to the limit, the photos are assessed twice more and the
+# middle estimate and the middle confidence of the three are used.
+EXTRA_LOOKS_MARGIN_EUR = 500
+
 # --- Fraud scoring ----------------------------------------------------------
 # Each signal adds points. Total >= HIGH -> high risk, >= MEDIUM -> medium risk.
 FRAUD_POINTS = {
