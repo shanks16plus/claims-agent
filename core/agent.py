@@ -42,7 +42,8 @@ GREETING = ("Hello, I'm an AI assistant for car damage claims, not a person. I'l
 
 
 DUTCH_WORDS = (" de ", " het ", " een ", " ik ", " mijn ", " niet ", " heb ", " heeft ", " ben ", " naar ", " zijn ",
-               " haar ", " gewond ", " ziekenhuis ", " pijn ", " gebroken ")
+               " haar ", " gewond ", " gewonden ", " iemand ", " ziekenhuis ", " pijn ", " gebroken ")
+REFERENCE = {"en": "Your reference is", "nl": "Uw referentienummer is"}
 INJURY_NOTE = {
     "en": "I'm sorry to hear that. Because someone may have been hurt, a person handles this claim from here, "
           "not our AI assistant.",
@@ -187,7 +188,8 @@ def hand_over(chat, reason, on_event=None, by_model=False):
     if not by_model:
         _event(chat, on_event, "code", "hand_over_to_human", {"reason": reason}, result)
         lead = INJURY_NOTE.get(chat.claim.get("language"), INJURY_NOTE["en"]) + " " if reason == "injury" else ""
-        reply = f"{lead}{result['customer_message']} Your reference is **{result['claim_id']}**."
+        reference = REFERENCE.get(chat.claim.get("language"), REFERENCE["en"])
+        reply = f"{lead}{result['customer_message']} {reference} **{result['claim_id']}**."
         chat.messages.append({"role": "assistant", "content": reply})
         chat.transcript.append({"role": "assistant", "text": reply})
         return reply
@@ -210,7 +212,8 @@ def confirm_and_file(chat, progress=None, on_event=None):
     chat.filed = {**filing, "decision": decision["decision"], "customer_message": decision["customer_message"]}
     if "injury" in claim["scope_flags"]:              # found at filing: the model is not asked to explain it
         lead = INJURY_NOTE.get(claim.get("language"), INJURY_NOTE["en"])
-        reply = f"{lead} {decision['customer_message']} Your reference is **{filing['claim_id']}**."
+        reference = REFERENCE.get(claim.get("language"), REFERENCE["en"])
+        reply = f"{lead} {decision['customer_message']} {reference} **{filing['claim_id']}**."
         chat.messages.append({"role": "assistant", "content": reply})
         chat.transcript.append({"role": "assistant", "text": reply})
         return reply

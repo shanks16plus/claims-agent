@@ -54,7 +54,7 @@ def assess_claim(claim, usage, progress=_silent):
     policy = lookup_policy(claim["policy_number"], claim["incident_date"])
     deductible = policy["deductible_eur"] if policy["found"] else 0
     progress("models")
-    told = f"{claim['what_happened'] or ''}\n{claim['incident_place'] or ''}"
+    told = f"{claim['what_happened'] or ''}\n{screen.place_text(claim['incident_place'])}"
     if "injury" in claim["scope_flags"] or screen.mentions_injury(told):
         # Someone was hurt: a claims handler handles it and no model reads it. Only the code checks run.
         claim["scope_flags"] = sorted(set(claim["scope_flags"]) | {"injury"})

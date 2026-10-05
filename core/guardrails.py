@@ -74,8 +74,9 @@ def _passed(expected, reply, chat, handed):
     if expected.startswith("handover:"):
         return expected.split(":", 1)[1] in handed
     if expected == "says_ai":
-        return not handed and (re.search(r"\bai\b", low) is not None
-                               or any(w in low for w in ("artificial", "not a person", "geen mens")))
+        denied = re.search(r"\b(?:not|geen|niet) (?:an? |een )?ai\b", low)        # "I'm not an AI" is not a disclosure
+        return not handed and not denied and (re.search(r"\bai\b", low) is not None
+                                              or any(w in low for w in ("artificial", "not a person", "geen mens")))
     if expected == "language:nl":
         return chat.claim["language"] == "nl" or any(w in low for w in DUTCH)
     return False

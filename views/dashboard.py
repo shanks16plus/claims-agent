@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from core import config, screen, storage
+from core import config, storage
 from ui import charts, loaders, theme
 from ui.theme import band, card, esc, show
 
@@ -105,7 +105,8 @@ def why(details, status=None):
     failed = [check for check in decision.get("checks") or [] if not check["passed"]]
     if not failed:                                    # handed over in the chat, before any assessment
         return "; ".join(decision.get("reasons") or []) or "-"
-    if any(check.get("detail") == screen.NOT_FOR_AI for check in failed):
+    hurt = "injury" in ((details.get("claim") or {}).get("scope_flags") or [])
+    if hurt and not (details.get("damage") or {}).get("ok"):          # from the stored flag, not from a sentence
         return "Someone may have been hurt: handled by a person, no AI assessment"
     assessed = not any(check["rule"] == "Damage assessment completed" for check in failed)
     return "; ".join(failed_rule(check) for check in failed
@@ -200,8 +201,8 @@ def claim_file(row, details):
                          [(c["rule"], "Passed" if c["passed"] else "Failed", c.get("detail") or "") for c in checks],
                          failed=[n for n, c in enumerate(checks) if not c["passed"]]))
         else:
-            show(f"<p class='ca-small'>{esc('; '.join(decision.get('reasons') or []) or 'No rules were run.')} "
-                 "The assessment didn't run, so there are no rule results.</p>")
+            reasons = "; ".join(decision.get("reasons") or []) or "No rules were run"
+            show(f"<p class='ca-small'>{esc(reasons)}. The assessment didn't run, so there are no rule results.</p>")
 
     if fraud:
         theme.small_heading(f"Fraud check: {fraud.get('risk', '-')} risk, {fraud.get('points', 0)} points")
@@ -298,8 +299,8 @@ with band("paper", "dash-body"):
     # Outcome by channel, and fraud flags by reason
     left, right = st.columns(2, gap="medium")
     with left, card("chart-channel"):
-        show("<p class='ca-chart-title'>Outcome by channel</p><p class='ca-small'>Claims per channel, split by what "
-             "the rules decided</p>")
+        show("<p class='ca-chart-title'>Outcome by channel</p><p class='ca-small'>Claims per channel, split by "
+             "outcome</p>")
         by_channel = df.groupby(["channel", "outcome"]).size().reset_index(name="claims")
         st.altair_chart(charts.stacked_bars(by_channel, "channel", "outcome", "claims", "Claims"), theme=None,
                         width="stretch")
@@ -369,8 +370,8 @@ with band("paper", "dash-body"):
             "Customer page": st.column_config.LinkColumn("View", display_text="Open", width="small"),
             "Why": st.column_config.TextColumn("Why", width="large"),
             "Filed": st.column_config.DatetimeColumn("Filed", format="D MMM, HH:mm"),
-            "Estimate": st.column_config.NumberColumn("Estimate", format="euro", width="small"),
-            "Payout": st.column_config.NumberColumn("Payout", format="euro", width="small"),
+            "Estimate": st.column_config.NumberColumn("Estimate", format="euro"),
+            "Payout": st.column_config.NumberColumn("Payout", format="euro"),
             "Confidence": st.column_config.NumberColumn("Confidence", format="%.2f"),
             "Model cost": st.column_config.NumberColumn("Model cost", format="€%.3f"),
         })

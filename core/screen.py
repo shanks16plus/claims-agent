@@ -29,6 +29,15 @@ _NO_HARM = [
     r"no need for (?:an? |the )?(?:ambulance|doctor|hospital|paramedics?)",
     rf"dead[- ](?:battery|end|stop|cent(?:re|er)|slow|straight|ahead|fox|deer|badger|bird|cat|dog|animal|rabbit|tree|branch|car|{_THING})",
     r"stop(?:ped|s)? dead",
+    r"(?:parked|parking|car ?park|garage)(?: of| at| by| outside| near| in front of| next to| behind| opposite)* (?:the |my |a |our )?"
+    r"(?:[\w.'’-]+ ){0,3}?(?:hospital|doctor(?:['’]s)?(?: surgery| office| practice)?)",
+    r"(?:geparkeerd|parkeer\w*)(?: stond| staan)? (?:voor|bij|naast|achter|tegenover|van) (?:het |de |een |mijn )?"
+    r"(?:[\w.'’-]+ ){0,2}?(?:ziekenhuis|huisarts(?:enpost|enpraktijk)?|dokter)",
+    r"(?:let|letting|make way for|made way for|gave way to|give way to|pulled over for|moved over for) an? ambulance"
+    r"(?: pass| through| by| past)?",
+    r"(?:car|van|vehicle|engine|battery) (?:is|was) (?:now |completely |totally |stone )dead",
+    r"(?:accu|batterij|motor) (?:is|was) (?:nu |helemaal )(?:dood|leeg)",
+    r"(?:at|on|in) the back (?:is|was|got|are|were) broken",
     rf"{_THING}{_WENT} (?:dead|died)",
     # "my car died", but not "the driver of the car died"
     rf"(?<!of )(?<!in )(?<!from )(?:my|the|our|his|her) car{_WENT} (?:dead|died)",
@@ -64,7 +73,7 @@ _BODY = (r"(?:arms?|legs?|ribs?|nose|wrists?|ankles?|neck|back|collar ?bone|hips
          r"skull|shoulders?|knees?|elbows?|toes?|thumbs?|pelvis|spine)")
 # "broken back window", "broken hand brake", "arm rest": the car, not a person
 _NOT_CAR = (r"(?! ?(?:rest|window|windscreen|screen|lights?|lamp|bumper|door|seat|axle|wheel|tyre|tire|brake|panel|end|box|"
-            r"bar|wiper|mirror|glass|passenger|quarter|arch|wing|corner|side|of the (?:car|van)))")
+            r"bar|wiper|mirror|glass|passenger|quarter|arch|wing|corner|side|of the (?:car|van))s?\b)")
 _ADJ = r"(?:left |right |lower |upper |both |two |three |\d+ )?"
 _LICHAAM = r"(?:arm|been|rib|ribben|neus|pols|enkel|nek|rug|sleutelbeen|heup|kaak|vinger|hand|voet|bot|schedel|schouder|knie)"
 _PERSON = r"(?:pedestrian|cyclist|child|kid|person|man|woman|boy|girl|baby)"
@@ -111,6 +120,15 @@ _HARM = [
 ]
 _NO_HARM_RE = re.compile("|".join(rf"\b(?:{p})\b" for p in _NO_HARM), re.IGNORECASE)
 _HARM_RE = re.compile("|".join(rf"(?<![\w&])(?:{p})(?![\w&])" for p in _HARM), re.IGNORECASE)
+
+
+# In an address these are buildings and street names ("Maasstad Ziekenhuis", "Doctor Molewaterplein"), not injuries
+_PLACE_NAMES = re.compile(r"\b(?:hospital|ziekenhuis|doctor|dokter|dr|huisarts\w*|arts)\b\.?", re.IGNORECASE)
+
+
+def place_text(place):
+    """A "where did it happen" answer with building and street names taken out, ready for mentions_injury."""
+    return _PLACE_NAMES.sub(" ", str(place or ""))
 
 
 def mentions_injury(text):

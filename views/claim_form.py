@@ -172,7 +172,7 @@ def details_step():
                          "If it is right, report your damage in the chat and ask for a claims handler.")
                 return
             state.ticked = list(flags)
-            if "injury" not in flags and screen.mentions_injury(f"{what}\n{place}"):
+            if "injury" not in flags and screen.mentions_injury(f"{what}\n{screen.place_text(place)}"):
                 flags.append("injury")             # the story says someone was hurt: a person handles it, not the AI
             if ("injury" in flags) != ("injury" in claim["scope_flags"]):
                 state.checked = {}                 # photos are checked by AI only when nobody was hurt
