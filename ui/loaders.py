@@ -14,10 +14,10 @@ SCENE_JS = Path(__file__).parent / "loader3d.js"
 
 STEPS = [
     ("policy", "Looking up your policy"),
-    ("damage", "Assessing the damage"),
-    ("details", "Checking the details"),
+    ("damage", "AI is assessing the damage"),
+    ("details", "AI is checking the photos against your story"),
     ("price", "Pricing the repair"),
-    ("rules", "Applying the rules"),
+    ("rules", "Applying the fixed rules"),
     ("file", "Filing your claim"),
 ]
 # Pipeline stage -> steps that run during it. The damage and detail checks run at the same time.
@@ -41,7 +41,7 @@ def _scan(src):
 
 def photo_scan(path):
     return (f"<div class='ca-scanrow'>{_scan(thumbnail(path, 480))}"
-            "<p><span class='ca-dots'>Checking your photo</span>"
+            "<p><span class='ca-dots'>AI is checking your photo</span>"
             "<span>Is it sharp, well lit, and is the damage in view?</span></p></div>")
 
 
@@ -85,7 +85,8 @@ class ClaimRun:
                 state, note = "", ""
             rows.append(f"<li class='{state}'><span class='n'>{number:02d}</span>{label}<span class='s'>{note}</span></li>")
         title, sub = (("Your claim is filed", "Taking you to your claim status.") if finished else
-                      ("Checking your claim", "This usually takes under a minute. Please keep this page open."))
+                      ("Checking your claim", "AI looks at your photos, then fixed rules decide. This usually takes under "
+                                              "a minute. Please keep this page open."))
         self.panel.html(f"<div class='ca-runpanel'><div class='ca-label'>Your claim</div><h2>{title}</h2>"
                         f"<p class='sub'>{sub}</p><ul class='ca-run'>{''.join(rows)}</ul></div>")
 

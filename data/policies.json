@@ -34,7 +34,7 @@
       "coverage_type": "all_risk",
       "own_damage_covered": true,
       "deductible_eur": 150,
-      "start_date": "2026-09-24",
+      "started_days_ago": 6,
       "vehicle": "Peugeot 208 (2017)",
       "vehicle_value_eur": 7500,
       "registration": "PZ-208-L",

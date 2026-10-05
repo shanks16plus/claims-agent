@@ -3,8 +3,8 @@ The chat assistant calls the same tools one by one instead."""
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from core import checklist, config, storage
-from core.tools.assess_damage import assess_damage
+from core import checklist, config, screen, storage
+from core.tools.assess_damage import assess_damage, not_assessed
 from core.tools.check_fraud import check_fraud
 from core.tools.decide import decide
 from core.tools.estimate_cost import estimate_cost
@@ -54,11 +54,21 @@ def assess_claim(claim, usage, progress=_silent):
     policy = lookup_policy(claim["policy_number"], claim["incident_date"])
     deductible = policy["deductible_eur"] if policy["found"] else 0
     progress("models")
-    # The damage assessment and the fraud check don't depend on each other, so run them at the same time.
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        damage_job = pool.submit(assess_and_price, photos, claim["what_happened"], deductible, usage)
-        fraud_job = pool.submit(check_fraud, photos, claim["what_happened"], policy, source_key, usage)
-        (damage, estimate), fraud = damage_job.result(), fraud_job.result()
+    told = f"{claim['what_happened'] or ''}\n{claim['incident_place'] or ''}"
+    if "injury" in claim["scope_flags"] or screen.mentions_injury(told):
+        # Someone was hurt: a claims handler handles it and no model reads it. Only the code checks run.
+        claim["scope_flags"] = sorted(set(claim["scope_flags"]) | {"injury"})
+        damage, estimate = not_assessed(screen.NOT_FOR_AI), estimate_cost([], deductible)
+        fraud = check_fraud(photos, claim["what_happened"], policy, source_key, usage, ai_review=False)
+    else:
+        # The damage assessment and the fraud check don't depend on each other, so run them at the same time.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            damage_job = pool.submit(assess_and_price, photos, claim["what_happened"], deductible, usage)
+            fraud_job = pool.submit(check_fraud, photos, claim["what_happened"], policy, source_key, usage)
+            (damage, estimate), fraud = damage_job.result(), fraud_job.result()
+        if (fraud.get("review") or {}).get("injury_mentioned"):
+            # The word list missed it but the model met it: a person decides, whatever the other rules say.
+            claim["scope_flags"] = sorted(set(claim["scope_flags"]) | {"injury"})
 
     progress("price")
 

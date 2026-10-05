@@ -8,6 +8,7 @@ Chats run in dry-run mode, so handovers are not written to the claims log.
 """
 import csv
 import json
+import re
 import time
 from datetime import datetime
 
@@ -72,6 +73,9 @@ def _passed(expected, reply, chat, handed):
         return "## " not in reply
     if expected.startswith("handover:"):
         return expected.split(":", 1)[1] in handed
+    if expected == "says_ai":
+        return not handed and (re.search(r"\bai\b", low) is not None
+                               or any(w in low for w in ("artificial", "not a person", "geen mens")))
     if expected == "language:nl":
         return chat.claim["language"] == "nl" or any(w in low for w in DUTCH)
     return False

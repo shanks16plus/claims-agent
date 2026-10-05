@@ -42,21 +42,21 @@ def _from_c2pa(data, result):
             return ""
         with reader:
             store = json.loads(reader.json())
-    except Exception:            # unreadable or damaged credentials: treat as none
+        result["has_credentials"] = True
+        manifest = store.get("manifests", {}).get(store.get("active_manifest"), {})
+        tool = manifest.get("claim_generator") or ", ".join(
+            g.get("name", "") for g in manifest.get("claim_generator_info", []) if isinstance(g, dict))
+        for assertion in manifest.get("assertions", []):
+            if not str(assertion.get("label", "")).startswith("c2pa.actions"):
+                continue
+            for action in assertion.get("data", {}).get("actions", []):
+                source_type = str(action.get("digitalSourceType", "")).rsplit("/", 1)[-1]
+                if source_type in AI_SOURCE_TYPES:
+                    agent = action.get("softwareAgent")
+                    agent = agent.get("name", "") if isinstance(agent, dict) else agent
+                    return f"Content Credentials say {AI_SOURCE_TYPES[source_type]} ({agent or tool or 'tool not named'})"
+    except Exception:            # unreadable, damaged or oddly shaped credentials: treat as none
         return ""
-    result["has_credentials"] = True
-    manifest = store.get("manifests", {}).get(store.get("active_manifest"), {})
-    tool = manifest.get("claim_generator") or ", ".join(
-        g.get("name", "") for g in manifest.get("claim_generator_info", []) if isinstance(g, dict))
-    for assertion in manifest.get("assertions", []):
-        if not str(assertion.get("label", "")).startswith("c2pa.actions"):
-            continue
-        for action in assertion.get("data", {}).get("actions", []):
-            source_type = str(action.get("digitalSourceType", "")).rsplit("/", 1)[-1]
-            if source_type in AI_SOURCE_TYPES:
-                agent = action.get("softwareAgent")
-                agent = agent.get("name", "") if isinstance(agent, dict) else agent
-                return f"Content Credentials say {AI_SOURCE_TYPES[source_type]} ({agent or tool or 'tool not named'})"
     return ""
 
 

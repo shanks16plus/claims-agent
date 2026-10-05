@@ -4,10 +4,12 @@ import io
 from pathlib import Path
 
 import imagehash
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from core import config, provenance
 
+# What Pillow raises for a file that is not a photo it can open (wrong type, cut off, or absurdly large)
+UNREADABLE = (UnidentifiedImageError, OSError, Image.DecompressionBombError)
 EXIF_SUB_IFD = 0x8769
 TAG_SOFTWARE, TAG_MAKE, TAG_MODEL, TAG_DATETIME, TAG_DATETIME_ORIGINAL = 305, 271, 272, 306, 36867
 

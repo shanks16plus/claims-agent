@@ -179,6 +179,19 @@ def record_decision(claim_id, status, payout_eur):
                      (status, payout_eur, now(), claim_id))
 
 
+def request_review(claim_id, note=""):
+    """A customer asks a person to look again at a claim that was decided automatically. The claim goes back to
+    the claims handlers; what the rules had decided, and the customer's note, are kept in the overrides log."""
+    claim = get_claim(claim_id)
+    if claim is None or claim["status"] != "settled":
+        return False
+    log_override(claim_id, "review_requested", claim["payout_eur"], None, note.strip())
+    with connect() as conn:
+        conn.execute("UPDATE claims SET status = 'awaiting_adjuster', payout_eur = NULL, decided_at = NULL "
+                     "WHERE claim_id = ?", (claim_id,))
+    return True
+
+
 def list_overrides(claim_id=None):
     query, params = "SELECT * FROM overrides", []
     if claim_id:

@@ -14,7 +14,7 @@ with band("hero-page", "legal"):
 
 with band("paper", "legal-body"), theme.lift("legal"), theme.card("legal"):
     show(f"""<div class='ca-legal'>
-<p class='ca-small'>Last updated 25 September 2026. This page covers the {theme.APP_NAME} prototype, built by a
+<p class='ca-small'>Last updated 5 October 2026. This page covers the {theme.APP_NAME} prototype, built by a
 student team for the RSM AI Strategy Lab. It is not an insurance product.</p>
 
 <h2>What this prototype is</h2>
@@ -35,21 +35,46 @@ and the time it was taken, and we check whether the file says it was made with A
 metadata). We use these only to check whether a photo may have been edited or generated. We then save a copy
 without any metadata, so location (GPS) data is never stored.</p>
 
-<h2>How AI models are used</h2>
-<p>Your text and photos are sent to AI models through OpenRouter:</p>
+<h2>How AI is used</h2>
+<p>Every page says where AI does the work. The chat assistant is an AI system, not a person. Your text and photos
+are sent to these AI models:</p>
 <ul>
-<li>{model_name(config.MODEL_FOR["chat"])} runs the chat assistant and checks whether photos are usable.</li>
+<li>{model_name(config.MODEL_FOR["chat"])} runs the chat assistant.</li>
+<li>{model_name(config.MODEL_FOR["photo_quality"])} checks whether each photo is clear enough to use.</li>
 <li>{model_name(config.MODEL_FOR["assess_damage"])} assesses the damage in the photos.</li>
 <li>{model_name(config.MODEL_FOR["fraud_review"])} checks whether the photos match the description and show the car on the policy.</li>
 {"<li>Sightengine checks whether a photo looks AI-generated.</li>" if provenance.detector_configured() else ""}
 </ul>
-<p>The models give an assessment. They do not decide whether a claim is paid.</p>
+<p>The models give an assessment. They do not decide whether a claim is paid, and AI can make mistakes.</p>
+
+<h2>When someone was hurt</h2>
+<p>If you tick that someone was injured, or your description says so, a claims handler handles the claim. Your
+description is not sent to the AI models and your photos are not assessed by AI. In the chat, a message that says
+someone was hurt is not sent to the AI model, and the chat stops there. We find these claims with a word list in
+English and Dutch, which can miss unusual wording. If an AI model still comes across an injury, the claim goes to
+a claims handler as well.</p>
 
 <h2>Automated decisions</h2>
-<p>A claim is settled automatically only when every rule in code is met: a valid policy, a low-risk check, a
-confident damage assessment and an estimate below {theme.esc(f"€{config.AUTO_SETTLE_MAX_EUR:,}")}. No claim is
-rejected automatically. Every claim that does not meet all the rules goes to a person, and you can ask for a person
-at any time in the chat.</p>
+<p>Small, clear claims are decided automatically, and no person looks at them. A claim is settled automatically
+only when it passes every fixed check. The main ones: a valid policy that covers the damage, a low result on the
+risk check, an AI damage assessment that is at least {round(config.MIN_CONFIDENCE_AUTO * 100)}% sure, every damaged
+part in our price list, and an estimate below {theme.esc(f"€{config.AUTO_SETTLE_MAX_EUR:,}")} that is not close to
+the value of the car. The result is a payment, or no payment when the repair costs less than your deductible.
+The rules never reject a claim: a claim that fails any check goes to a claims handler, who decides.</p>
+
+<h2>What you can ask for</h2>
+<ul>
+<li>If your claim was decided automatically, you can ask for a person to review it. You can also give your side
+and tell us you disagree. Open your claim status page and choose "Do you disagree, or do you want to explain
+something?".</li>
+<li>In the chat, you can ask for a claims handler at any point, in words or with the button under the chat.
+The chat then stops and the claims handler contacts you.</li>
+<li>If you have a complaint about how we use AI, tell the project team through the course. We will explain how your
+claim was handled.</li>
+</ul>
+<p>The rules behind this are the EU AI Act (Article 50), which asks that people are told when they deal with an AI
+system, and the GDPR (Articles 13 and 22), which covers decisions made without a person. This prototype is a
+student project. Nobody has assessed it against these rules.</p>
 
 <h2>Where data is kept, and for how long</h2>
 <p>Claims are stored as local files on the computer or server running the prototype. They are kept for the course

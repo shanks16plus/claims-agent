@@ -145,6 +145,19 @@ def small_heading(text):
     st.html(f"<p class='ca-h'>{esc(text)}</p>")
 
 
+def ai_note(text, lead="Checked by", link=False):
+    """The full AI notice: the marker, one or two sentences of our own copy (never customer or model text) and,
+    with `link`, a link to the privacy page. The link opens in a new tab, so a half-filled form is not lost."""
+    more = " <a href='privacy' target='_blank'>How AI is used</a>" if link else ""
+    st.html(f"<div class='ca-ai' role='note' aria-label='How AI is used here'>{ai_tag(lead)}<p>{text}{more}</p></div>")
+
+
+def ai_tag(lead="Checked by"):
+    """The short AI marker beside a result: a few words, then "AI" in a filled block. lead="" gives the block alone."""
+    words = f"{esc(lead)} " if lead else ""
+    return f"<small class='ca-ai-mark'>{words}<abbr title='Artificial intelligence'>AI</abbr></small>"
+
+
 # --- Footer and access ------------------------------------------------------------------
 def footer(slim=False):
     """The site footer. slim=True: one line for the internal (insurer) pages."""
@@ -165,29 +178,34 @@ def footer(slim=False):
             "<div class='ca-footer'><div>"
             f"<div class='brand'><i></i>{APP_NAME}</div>"
             "<p>A prototype built for the RSM AI Strategy Lab. It uses fictional policies and test photos, and "
-            "no real claims are paid. An AI model reads each claim; prices, limits and the final decision are set "
-            "in code, and anything unclear goes to a person.</p></div>"
+            "no real claims are paid.</p>"
+            f"<p class='ca-ai-line'>{ai_tag('Uses')}AI models run the chat, check your photos and assess the damage. "
+            "Prices, limits and the final decision are set in code, and anything unclear goes to a person.</p></div>"
             f"<div><p>Photos on <a href='https://unsplash.com/{UTM}' target='_blank'>Unsplash</a> by "
             f"{', '.join(credits)}. Hero video from <a href='https://mixkit.co/' target='_blank'>Mixkit</a>.</p>"
             "</div></div>")
         st.page_link("views/legal.py", label="Privacy notice and terms of use")
 
 
-def password_gate():
-    """Protects the deployed link. Local runs (localhost) skip it."""
-    password = config.secret("APP_PASSWORD")
+def signed_in():
+    """True when no team password is needed: none is set, the app runs locally, or it was entered this session."""
     host = st.context.headers.get("Host", "")
-    if not password or host.startswith(("localhost", "127.0.0.1")) or st.session_state.get("authed"):
-        return True
+    return (not config.secret("APP_PASSWORD") or host.startswith(("localhost", "127.0.0.1"))
+            or st.session_state.get("authed", False))
+
+
+def password_gate():
+    """The team password screen for the deployed link. A form, so pressing Enter submits it."""
     with band("hero-page", "gate"):
         hero_media("rotterdam", even=True)
         heading(APP_NAME, "Team access", size="page-title")
     with band("canvas", "gate-form"):
         with lift("gate"), card("gate"):
-            entered = st.text_input("Password", type="password")
-            if st.button("Continue", type="primary"):
-                if entered == password:
+            with st.form("gate", border=False):
+                entered = st.text_input("Password", type="password")
+                sent = st.form_submit_button("Continue", type="primary")
+            if sent:
+                if entered == config.secret("APP_PASSWORD"):
                     st.session_state["authed"] = True
                     st.rerun()
                 st.error("That password isn't right.")
-    return False

@@ -23,7 +23,7 @@ from pathlib import Path
 import anthropic
 import openai
 
-from core import checklist, config, images, llm
+from core import checklist, config, images, llm, screen
 from core.pipeline import process_claim
 from core.tools.check_photo_quality import check_photo_quality
 from core.tools.file_claim import file_handover
@@ -35,9 +35,20 @@ ANSWER_FIELDS = ["what_happened", "incident_date", "incident_place", "other_part
 HANDOVER_REASONS = ["injury", "theft", "total_loss", "dispute", "upset_customer", "asked_for_human",
                     "off_topic_repeated"]
 
-GREETING = ("Hello, I'm the claims assistant. I'll help you report the damage to your car, one question at a time. "
-            "What is your policy number? You can find it on your policy card.\n\n"
-            "*U kunt ook in het Nederlands schrijven.*")
+GREETING = ("Hello, I'm an AI assistant for car damage claims, not a person. I'll help you report the damage to "
+            "your car, one question at a time. You can ask for a claims handler at any point: the chat then stops "
+            "and the claims handler contacts you. What is your policy number? You can find it on your policy card."
+            "\n\n*U praat met een AI-assistent, niet met een mens. U kunt ook in het Nederlands schrijven.*")
+
+
+DUTCH_WORDS = (" de ", " het ", " een ", " ik ", " mijn ", " niet ", " heb ", " heeft ", " ben ", " naar ", " zijn ",
+               " haar ", " gewond ", " ziekenhuis ", " pijn ", " gebroken ")
+INJURY_NOTE = {
+    "en": "I'm sorry to hear that. Because someone may have been hurt, a person handles this claim from here, "
+          "not our AI assistant.",
+    "nl": "Wat vervelend om te horen. Omdat er mogelijk iemand gewond is, neemt een schadebehandelaar deze claim "
+          "over. Onze AI-assistent behandelt deze claim niet verder.",
+}
 
 
 def _tool(name, description, properties=None, required=None):
@@ -131,6 +142,25 @@ def respond(chat, text, attachment_ids=(), on_event=None):
     chat.customer_messages += 1
     chat.claim["metrics"]["chat_turns"] = chat.customer_messages
     chat.awaiting_confirmation = False                # typing instead of confirming means "change something"
+    names = " ".join(chat.uploads[i]["name"] for i in attachment_ids)      # "my_injured_arm.jpg" counts too
+    hurt = screen.mentions_injury(text) or screen.mentions_injury(re.sub(r"[\W_]+", " ", names))
+    if hurt:                                          # someone was hurt: a person takes over, the model never sees it
+        words = " " + re.sub(r"[^\w']+", " ", text.lower()) + " "
+        if sum(word in words for word in DUTCH_WORDS) >= 2:
+            chat.claim["language"] = "nl"             # no model call to notice the language, so a rough check does
+        number = re.search(r"\bNL[- ]?\d{6}\b", text, re.IGNORECASE)
+        if number and not chat.claim["policy_number"]:
+            chat.claim["policy_number"] = number.group(0).upper()      # kept for the handler, without a model
+        for i in attachment_ids:                      # what came with the message goes to the handler unchecked
+            item = chat.uploads[i]
+            if i.startswith("p"):
+                chat.claim["photos"].append({**item, "usable": True, "check": {"usable": True, "checked": False}})
+            else:
+                chat.claim["documents"].append({"kind": "other", "name": item["name"], "path": item["path"]})
+        chat.messages.append({"role": "user", "content": "(message withheld from the AI: it mentions an injury)"})
+        _event(chat, on_event, "guard", "injury_screen", {"matched": hurt},
+               {"note": "This message was not sent to the AI model."})
+        return hand_over(chat, "injury", on_event)
     notes = [f"[Photo {i}: {chat.uploads[i]['name']}]" if i.startswith("p") else
              f"[Document {i}: {chat.uploads[i]['name']}]" for i in attachment_ids]
     chat.messages.append({"role": "user", "content": "\n".join([text.strip(), *notes]).strip() or "(no text)"})
@@ -156,7 +186,8 @@ def hand_over(chat, reason, on_event=None, by_model=False):
     chat.filed = {**result, "decision": "route_to_human", "handover": reason}
     if not by_model:
         _event(chat, on_event, "code", "hand_over_to_human", {"reason": reason}, result)
-        reply = f"{result['customer_message']} Your reference is **{result['claim_id']}**."
+        lead = INJURY_NOTE.get(chat.claim.get("language"), INJURY_NOTE["en"]) + " " if reason == "injury" else ""
+        reply = f"{lead}{result['customer_message']} Your reference is **{result['claim_id']}**."
         chat.messages.append({"role": "assistant", "content": reply})
         chat.transcript.append({"role": "assistant", "text": reply})
         return reply
@@ -177,6 +208,12 @@ def confirm_and_file(chat, progress=None, on_event=None):
         return f"Something is still missing: {', '.join(filing.get('missing', [])) or filing['error']}"
     decision = results["decision"]
     chat.filed = {**filing, "decision": decision["decision"], "customer_message": decision["customer_message"]}
+    if "injury" in claim["scope_flags"]:              # found at filing: the model is not asked to explain it
+        lead = INJURY_NOTE.get(claim.get("language"), INJURY_NOTE["en"])
+        reply = f"{lead} {decision['customer_message']} Your reference is **{filing['claim_id']}**."
+        chat.messages.append({"role": "assistant", "content": reply})
+        chat.transcript.append({"role": "assistant", "text": reply})
+        return reply
     chat.messages.append({"role": "user", "content": (
         "[Message from the claims system, not from the customer] The customer confirmed and the claim was "
         f"filed with reference {filing['claim_id']}. The decision, to pass on: \"{decision['customer_message']}\" "

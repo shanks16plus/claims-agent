@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core import agent, checklist, config  # noqa: E402
+from core import agent, checklist, config, llm, pipeline  # noqa: E402
 
 
 class FakeModel:
@@ -155,8 +155,49 @@ def tool_cases():
     return rows
 
 
+def injury_cases():
+    """A customer says a person was hurt: a claims handler takes over and no model reads the text (core/screen.py)."""
+    said = [
+        ("Chat: 'my passenger hurt her neck'", "Someone crashed into me and my passenger hurt her neck.", True),
+        ("Chat: 'we both went to hospital'", "We both went to hospital afterwards.", True),
+        ("Chat, in Dutch: 'mijn zoon is gewond geraakt'", "Er reed iemand achterop en mijn zoon is gewond geraakt.", True),
+        ("'Nobody was hurt' is not an injury (control)", "A van reversed into my door. Nobody was hurt.", False),
+        ("'The battery was dead' is not an injury (control)", "The battery was dead, so I pushed the car into a post.",
+         False),
+        ("Unusual wording (known gap: the chat model is told to hand over instead)",
+         "She had to see someone about her neck afterwards.", False),
+        ("A misspelling (known gap)", "My passenger was injurd.", False),
+    ]
+    rows = []
+    for name, text, expect in said:
+        chat, reply, model = run(message=text)
+        caught = "injury_screen" in guards(chat) and chat.ended and model.calls == 0
+        rows.append(("Someone was hurt", name, expect, caught, reply))
+
+    # The form: with an injury in the story, or the box ticked, the pipeline must not call a model either
+    called = []
+    real_ask = llm.ask_json
+    llm.ask_json = lambda *args, **kwargs: (called.append(1), (None, "A model was called"))[1]
+    photos = [{"slot": checklist.guess_slot(p.name), "name": p.name, "path": str(p), "usable": True}
+              for p in sorted((config.DATA / "demo_photos" / "small_clean").glob("*.jpg"))]
+    for name, story, flags in [
+        ("Form: the story says 'taken to hospital'", "A car hit me from behind and my daughter was taken to hospital.", []),
+        ("Form: the 'Someone was injured' box is ticked", "A car hit me from behind. The rear bumper is dented.", ["injury"]),
+    ]:
+        claim = checklist.new_claim("form")
+        claim.update(claim_id="TEST", source_key="test", policy_number="NL-100001", what_happened=story,
+                     scope_flags=flags, incident_date="2026-09-27", incident_place="Rotterdam",
+                     other_party_involved=True, drivable=True, photos=photos)
+        before = len(called)
+        decision = pipeline.assess_claim(claim, llm.Usage())["decision"]
+        caught = len(called) == before and decision["decision"] == "route_to_human" and "injury" in claim["scope_flags"]
+        rows.append(("Someone was hurt", name, True, caught, "Goes to a claims handler; no model call"))
+    llm.ask_json = real_ask
+    return rows
+
+
 def main():
-    rows = amount_cases() + leak_cases() + limit_cases() + tool_cases()
+    rows = amount_cases() + leak_cases() + limit_cases() + tool_cases() + injury_cases()
     surprises = 0
     group = None
     for area, name, expect, caught, reply in rows:

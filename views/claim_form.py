@@ -5,7 +5,7 @@ from datetime import date
 
 import streamlit as st
 
-from core import checklist, config, demo, images, llm
+from core import checklist, config, demo, images, llm, screen
 from core.pipeline import process_claim
 from core.tools.check_photo_quality import check_photo_quality
 from core.tools.lookup_policy import lookup_policy
@@ -37,7 +37,7 @@ SHOTS = {
                 "<path d='M38 17l6 5-3 4 7 3' fill='none' stroke='#2FAE6B' stroke-width='2' stroke-linecap='round'/></svg>",
     "Number plate": "<svg viewBox='0 0 100 46'><rect x='12' y='11' width='76' height='24' rx='3' fill='none' "
                     "stroke='#C7CFD9' stroke-width='2'/><rect x='12' y='11' width='11' height='24' rx='2' "
-                    "fill='#1C3553'/><text x='56' y='28' text-anchor='middle' font-family='Inter,sans-serif' "
+                    "fill='#1C3553'/><text x='56' y='28' text-anchor='middle' font-family='IBM Plex Mono,monospace' "
                     "font-size='12' font-weight='700' fill='#2FAE6B' letter-spacing='1'>AB-123-C</text></svg>",
 }
 SHOT_HELP = {"Wide shot": "The whole car, a few steps back", "Close-up": "One per damaged area, filling the frame",
@@ -47,6 +47,7 @@ state = st.session_state
 
 def reset():
     state.claim = checklist.new_claim("form")
+    state.ticked = []             # the "does any of this apply" boxes the customer ticked (not ones the app added)
     state.step = 0
     state.raw = {}                # photo key -> stored photo, before its check
     state.checked = {}            # photo key -> photo with its quality check
@@ -70,7 +71,10 @@ def add_photo(key, photo):
 
 
 def checked_photo(key, photo):
-    """Run the photo check once per photo and remember the result. A scan runs over the photo meanwhile."""
+    """Run the photo check once per photo and remember the result. A scan runs over the photo meanwhile.
+    When someone was hurt, a claims handler handles the claim and the AI checks nothing, photos included."""
+    if key not in state.checked and "injury" in claim["scope_flags"]:
+        state.checked[key] = {**photo, "usable": True, "check": {"usable": True, "checked": False, "for_handler": True}}
     if key not in state.checked:
         scanning = st.empty()
         scanning.html(loaders.photo_scan(photo["path"]))
@@ -86,11 +90,18 @@ def checked_photo(key, photo):
 def show_check(photo):
     check = photo["check"]
     if photo["usable"]:
-        note = "Accepted" if check.get("checked") else "Received, not checked"
-        show(f"<p class='ca-check ok'><b>{note}</b></p>")
+        if check.get("checked"):
+            show(f"<p class='ca-check ok'><b>Photo accepted</b>{theme.ai_tag()}</p>")
+        elif check.get("for_handler"):
+            show("<p class='ca-check ok'><b>Received for the claims handler</b></p>")
+        else:
+            show("<p class='ca-check ok'><b>Photo received</b></p>"
+                 "<p class='ca-small' style='margin:.3rem 0 0'>The AI check could not run.</p>")
     else:
         hint = check.get("retake_hint") or "This photo can't be used. Please take it again."
-        show(f"<div class='ca-check retake'><b>Retake needed</b>{esc(hint)}</div>")
+        show(f"<div class='ca-check retake'><b>Retake needed</b>{esc(hint)}{theme.ai_tag()}</div>"
+             "<p class='ca-small' style='margin:.4rem 0 0'>Think the photo is fine? Report your damage in the chat "
+             "instead and ask for a claims handler.</p>")
 
 
 def thumbs(photos):
@@ -119,6 +130,10 @@ def details_step():
                     claim["source_key"] = f"demo:{choice}"
                     st.rerun()
 
+        theme.ai_note("AI checks your photos and assesses the damage. Fixed rules then decide. A small, clear claim "
+                      "is settled automatically and no person looks at it: we pay, or we pay nothing if the repair "
+                      "costs less than your deductible. A claims handler decides every other claim. You can ask "
+                      "a claims handler to review an automatic result.", lead="This form uses", link=True)
         with st.form("details", border=False):
             policy_number = st.text_input("Policy number", value=claim["policy_number"] or "",
                                           placeholder="NL-100001")
@@ -136,9 +151,11 @@ def details_step():
                                index=1 if claim["other_party_involved"] else 0)
             drivable = right.radio("Can the car still be driven?", ["Yes", "No"], horizontal=True,
                                    index=1 if claim["drivable"] is False else 0)
-            show("<p style='margin:1rem 0 0.2rem;font-weight:600'>Does any of this apply?</p>")
+            show("<p style='margin:1rem 0 0.2rem;font-weight:600'>Does any of this apply?</p>"
+                 "<p class='ca-small' style='margin:0 0 .4rem'>If someone was hurt, tick the first box. A claims "
+                 "handler then handles your claim, and AI does not assess it.</p>")
             flags = [key for key, label in SCOPE_QUESTIONS.items()
-                     if st.checkbox(label, value=key in claim["scope_flags"])]
+                     if st.checkbox(label, value=key in state.get("ticked", claim["scope_flags"]))]
             language = st.radio("Messages about your claim in", ["English", "Nederlands"], horizontal=True,
                                 index=1 if claim["language"] == "nl" else 0)
             submitted = st.form_submit_button("Continue to photos", type="primary")
@@ -151,8 +168,14 @@ def details_step():
                 st.error(f"Please add {', '.join(problems)}.")
                 return
             if not lookup_policy(policy_number)["found"]:
-                st.error(f"We can't find policy number {policy_number}. Check the number on your policy card.")
+                st.error(f"We can't find policy number {policy_number}. Check the number on your policy card. "
+                         "If it is right, report your damage in the chat and ask for a claims handler.")
                 return
+            state.ticked = list(flags)
+            if "injury" not in flags and screen.mentions_injury(f"{what}\n{place}"):
+                flags.append("injury")             # the story says someone was hurt: a person handles it, not the AI
+            if ("injury" in flags) != ("injury" in claim["scope_flags"]):
+                state.checked = {}                 # photos are checked by AI only when nobody was hurt
             claim.update({
                 "policy_number": policy_number.strip(),
                 "incident_date": incident_date.isoformat(),
@@ -173,11 +196,17 @@ def photos_step():
     with side:
         shots = "".join(f"<div class='row'>{theme.svg(drawing)}<div><b>{name}</b><span>{SHOT_HELP[name]}</span></div></div>"
                         for name, drawing in SHOTS.items())
+        checked_by = ("A claims handler looks at your photos." if "injury" in claim["scope_flags"] else
+                      "AI checks each photo as soon as you add it. At this step it only checks whether the photo "
+                      "can be used. After you send your claim, AI also assesses the damage in your photos.")
         show("<div class='ca-tipcard' data-reveal='up'><h3>Good photos help</h3>"
              "<p>Daylight or a well-lit place works best. Keep the phone steady, and make sure the damage fills a "
-             "good part of the close-up. We check each photo as soon as you add it.</p>"
+             f"good part of the close-up. {checked_by}</p>"
              f"<div class='ca-shots'>{shots}</div></div>")
-        if claim["scope_flags"]:
+        if "injury" in claim["scope_flags"]:
+            show("<p class='ca-note'>Because someone may have been hurt, a claims handler handles this claim. "
+                 "AI does not assess it. Your photos still help the claims handler.</p>")
+        elif claim["scope_flags"]:
             show("<p class='ca-note'>Because of what you told us, a claims handler will take over this claim. "
                  "Photos still help them.</p>")
         show("<div style='height:1.2rem'></div>" + photo("start", height=380, parallax=24))
@@ -201,10 +230,14 @@ def photos_step():
                 label = "Add a photo" if not kept else "Add another photo" if slot == "closeup" else "Upload a retake"
                 file = st.file_uploader(label, type=PHOTO_TYPES, key=f"upload_{slot}_{state.upload_round[slot]}")
                 if file:
-                    add_photo(f"upload:{file.file_id}",
-                              images.store_upload(file.getvalue(), file.name, slot, state.upload_dir))
-                    state.upload_round[slot] += 1      # a fresh, empty upload box
-                    st.rerun()
+                    try:
+                        add_photo(f"upload:{file.file_id}",
+                                  images.store_upload(file.getvalue(), file.name, slot, state.upload_dir))
+                    except images.UNREADABLE:
+                        st.error(f"We couldn't open {file.name} as a photo. Please upload a JPG or PNG.")
+                    else:
+                        state.upload_round[slot] += 1      # a fresh, empty upload box
+                        st.rerun()
             show("<div style='height:.8rem'></div>")
         photos = [state.checked[k] for k in state.photo_keys if k in state.checked]
 
@@ -273,24 +306,40 @@ def review_step():
                 state.step = 1
                 st.rerun()
 
-        show("<div style='border-top:1px solid var(--line);margin:1rem 0 .2rem'></div>")
+        show("<div style='border-top:1px solid var(--line);margin:1rem 0 1rem'></div>")
+        if "injury" in claim["scope_flags"]:
+            show("<p class='ca-note' style='margin:0 0 1rem'>Because someone may have been hurt, your claim goes "
+                 "straight to a claims handler. AI does not assess it.</p>")
+        else:
+            show(f"<p class='ca-small ca-ai-line' style='margin:0 0 1rem'>{theme.ai_tag('Assessed by')}When you "
+                 "send your claim, AI assesses the damage in your photos and fixed rules decide straight away. If "
+                 "your claim passes every rule, it is settled automatically and no person looks at it. Otherwise "
+                 "a claims handler decides. The next page shows the result, and you can ask a claims handler "
+                 "to review an automatic one.</p>")
         confirmed = st.checkbox("I confirm these details are correct")
         if st.button("Send my claim", type="primary"):
             if not confirmed:
                 st.error("Please confirm the details first.")
                 return
             claim["confirmed"] = True
-            run = loaders.ClaimRun(overlay, [p["path"] for p in usable])
-            try:
-                _, filing = process_claim(claim, state.usage, progress=run)
-            except Exception:
-                run.clear()
-                raise
-            if not filing["filed"]:
-                run.clear()
-                st.error(filing["error"] + " " + ", ".join(filing.get("missing", [])))
-                return
-            time.sleep(1)                  # let "Your claim is filed" register before the page changes
+            if "injury" in claim["scope_flags"]:       # no AI runs, so no "checking your claim" screen either
+                with st.spinner("Sending your claim to a claims handler"):
+                    _, filing = process_claim(claim, state.usage)
+                if not filing["filed"]:
+                    st.error(filing["error"] + " " + ", ".join(filing.get("missing", [])))
+                    return
+            else:
+                run = loaders.ClaimRun(overlay, [p["path"] for p in usable])
+                try:
+                    _, filing = process_claim(claim, state.usage, progress=run)
+                except Exception:
+                    run.clear()
+                    raise
+                if not filing["filed"]:
+                    run.clear()
+                    st.error(filing["error"] + " " + ", ".join(filing.get("missing", [])))
+                    return
+                time.sleep(1)              # let "Your claim is filed" register before the page changes
             claim_id = filing["claim_id"]
             reset()
             st.switch_page("views/claim_status.py", query_params={"claim": claim_id})

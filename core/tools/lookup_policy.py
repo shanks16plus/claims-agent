@@ -1,7 +1,7 @@
 """Tool 1: look up a policy in policies.json. Read-only: nothing here can change a policy."""
 import json
 import re
-from datetime import date
+from datetime import date, timedelta
 
 from core import config
 
@@ -28,15 +28,22 @@ def lookup_policy(policy_number, incident_date=None):
         "coverage_type": policy["coverage_type"],
         "own_damage_covered": policy["own_damage_covered"],
         "deductible_eur": policy["deductible_eur"],
-        "start_date": policy["start_date"],
+        "start_date": _start_date(policy).isoformat(),
         "vehicle": policy["vehicle"],
         "vehicle_value_eur": policy["vehicle_value_eur"],
         "registration": policy.get("registration", ""),
         "date_issues": [],
     }
     if incident_date:
-        result["date_issues"] = _date_issues(incident_date, date.fromisoformat(policy["start_date"]))
+        result["date_issues"] = _date_issues(incident_date, _start_date(policy))
     return result
+
+
+def _start_date(policy):
+    """A demo policy that must always look brand new gives its age in days instead of a fixed date."""
+    if "started_days_ago" in policy:
+        return date.today() - timedelta(days=policy["started_days_ago"])
+    return date.fromisoformat(policy["start_date"])
 
 
 def _date_issues(incident_date, start):

@@ -114,7 +114,7 @@ SIGHTENGINE_API_SECRET = secret("SIGHTENGINE_API_SECRET")
 RECENT_POLICY_DAYS = 14
 EDITING_SOFTWARE = [
     "photoshop", "lightroom", "gimp", "snapseed", "picsart", "canva", "affinity",
-    "pixelmator", "facetune", "midjourney", "dall", "stable diffusion", "firefly",
+    "pixelmator", "facetune", "midjourney", "dall-e", "dalle", "dall·e", "stable diffusion", "firefly",
 ]
 
 # --- Chat guardrails ----------------------------------------------------------

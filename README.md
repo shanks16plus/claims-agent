@@ -44,9 +44,28 @@ The model decides what to ask and how to phrase it (`prompts/assistant_system.md
 - It can only call five tools: `lookup_policy`, `check_photo_quality`, `record_answer`, `hand_over_to_human` and `file_claim`. The last one runs the fixed pipeline (assess, price, fraud check, decide, file).
 - Answers only go into the checklist fields, and each value is checked: dates can't be in the future, and yes/no must be yes or no.
 - The claim is filed only after the customer presses "Confirm and file" themselves.
-- An injury, theft, a dispute, an upset customer or a request for a person hands the claim to a claims handler.
+- A theft, a dispute, an upset customer or a request for a person hands the claim to a claims handler. So does an injury, and that one is handled in code before the model sees the message (see When someone was hurt).
+- The assistant says it is an AI in its first message, and the model is told to say so whenever it is asked.
 - After 25 customer messages a person takes over. After two messages in a row that don't move the claim forward, the app offers a person.
 - Amounts of money are removed from replies until the claim is decided, and so are the prompt's own markers and tool names.
+
+## Saying where AI is used
+
+Wherever AI does the work, the page says so, with one marker: a few words followed by "AI" in a filled block, alone beside a result or leading a short notice (`theme.ai_tag` and `theme.ai_note` in `ui/theme.py`). The notice links to the privacy page, which opens without the team password:
+- **Home:** the second section is the workflow diagram: AI checks and assesses, fixed rules decide, a person takes everything else.
+- **Form:** a notice at the top of the first step, "Checked by AI" beside every photo result, and a notice before the Send button.
+- **Checking your claim:** the steps that are AI say so ("AI is assessing the damage").
+- **Chat:** the header, the first message, the name above every reply and a line under the message box all say it is an AI assistant, not a person.
+- **Status page:** a line under the decision says how it was made: by AI and fixed rules with no person involved, or by a claims handler. A claim that was decided automatically has a way to ask a claims handler to review it, with room to explain; the claim then goes back to the handlers.
+- **Privacy page:** which models are used for what, how automatic decisions work, and what a customer can ask for.
+
+The reasons are the EU AI Act (Article 50: people must be told when they deal with an AI system) and the GDPR (Articles 13 and 22: decisions made without a person). The prototype has not been assessed against either.
+
+## When someone was hurt
+
+Claims that involve an injury are for a claims handler, and the AI models are kept out of them (`core/screen.py`):
+- A word list in English and Dutch runs on the customer's text before any model sees it. In the chat, a message that mentions an injury is withheld from the model and the chat is handed over. In the form, the story or the "Someone was injured" box sends the claim to a handler: no photo checks, no damage assessment and no fraud review by AI, and no model cost.
+- The list catches the usual wording ("hurt her neck", "went to hospital", "gewond", "ziekenhuis") and skips "nobody was hurt". On 225 test sentences written to probe it, it caught all 70 plain statements that someone was hurt and about half of the unusual or misspelt ones, with 4 false alarms in 107 sentences where nobody was hurt. As a second layer, the chat model is told to hand over, and the fraud review reports `injury_mentioned`, which also sends the claim to a handler. In that case a model has read the text.
 
 ## Steadier estimates
 
@@ -87,16 +106,18 @@ The Dashboard page (under Insurer in the top menu) reads the claims log. It show
 - Charts of the outcome by channel, fraud flags by reason and claims per day, each with a table view.
 - Form and chat compared, and every claim with a link to its status page.
 
+The claims table has a **Why** column (which rules sent a claim to a person), and under it a **Claim file**: pick a claim to see what the customer sent, every rule with its result, each fraud signal with what was found, the plate the AI read, and the damage and price. It is read from the claims log, so it works for every claim.
+
 One filter row at the top (period and channels) applies to everything below it. Batch tests are left out unless you select them. The insurer pages are built for a laptop screen.
 
 ## Guardrail tests
 
 ```bash
-python scripts/run_guardrails.py --runs 3        # the 17 messages in data/guardrail_tests.csv, three times (about €0.10)
+python scripts/run_guardrails.py --runs 3        # the 19 messages in data/guardrail_tests.csv, three times (about €0.10)
 python scripts/test_code_guardrails.py           # the code guardrails alone, with fake model replies (free)
 ```
 
-The first sends each test message (off-topic, advice, amounts, prompt injection, a photo with a hidden instruction, injury, theft, asking for a person, an upset customer, other customers, Dutch) to a fresh chat in dry-run mode. On 28 September 2026 Gemini 3.7 Flash passed 17 of 17 in each of three runs, every time without a code guardrail stepping in.
+The first sends each test message (off-topic, advice, amounts, prompt injection, a photo with a hidden instruction, injury, theft, asking for a person, an upset customer, other customers, Dutch) to a fresh chat in dry-run mode. On 28 September 2026 Gemini 3.7 Flash passed 17 of 17 in each of three runs, every time without a code guardrail stepping in. On 5 October, with two tests added ("am I talking to a person?" and an injury worded so the word list misses it), it passed 19 of 19: the plain injury message is handled by the code rule before the model sees it, and the other 18 by the model alone.
 
 The second replaces the model with scripted replies, so it tests the code layer on its own. It catches amounts before a decision (€1,250, 1.250 euro, EUR 800, 900 EUR), the prompt's own markers and tool names, the 25-message limit, the offer of a person after two off-topic messages, unknown tools, future dates, and filing without the customer's button. Known gaps, on record in the script: amounts written in words or without a currency, the prompt retold in other words, and false statements (the model can say "your claim is filed" when it isn't; the code blocks the action, not the words).
 
@@ -133,6 +154,10 @@ python scripts/record_demo.py --flow chat        # or form, or dashboard; needs 
 ```
 
 The recorder drives Chrome like a person would, with real model calls (a few cents for chat and form), so the outcome is whatever the rules decide.
+
+## Deploying
+
+The app runs on Streamlit Community Cloud, which applies a push by reloading changed files in place, without restarting. `fresh.py` makes that safe: before app.py imports our own packages, it drops them if any source file changed, so pages never run new code against old helpers. A sleeping app is rebuilt from scratch when it wakes, which resets the claims log to the seeded test runs.
 
 ## Look and feel
 
@@ -183,7 +208,7 @@ What the prototype does not do:
 - **Variable estimates.** The same photos can still get a different estimate on another run: the model lists a light scuff on the next panel about two times in three, so the small demo claim prices at €520 or €1,021. Near the limit, three assessments keep the decision steady (see Steadier estimates). Confidence also varies (0.75 to 0.90 for the same photos), so a claim just above the 80% bar can occasionally go to a person.
 - **Weak fraud checks.** The fraud signals flag claims for a person to look at; they prove nothing. Missing camera metadata is common in honest photos too (messaging apps strip it).
 - **AI photos are only partly caught.** Content Credentials and metadata are lost in screenshots and re-saves; the optional detector is the backstop but can be wrong both ways; SynthID can only be checked by hand.
-- **No claims-handler tools yet.** Routed claims wait in the log; there is no queue page to approve, change or reject them yet.
+- **No claims-handler tools yet.** Routed claims wait in the log. A handler can read the full claim file on the dashboard, but there is no queue page to approve, change or reject a claim yet. A customer's request to review an automatic decision puts the claim back in the log as waiting for a handler.
 - **Local, temporary data.** Claims are stored in local files. On Streamlit Cloud they disappear when the app restarts.
 - **No accounts.** One shared team password protects the deployed link; there are no customer logins.
 - **Guardrails tested on single messages only.** Each test is one message at the start of a chat; attacks in the middle of a claim or spread over several messages aren't tested. See the known gaps under Guardrail tests.

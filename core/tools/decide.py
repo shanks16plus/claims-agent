@@ -22,7 +22,7 @@ NEXT_STEPS = {
 
 MESSAGES = {
     "en": {
-        "paid": ("Your claim is approved. The repair estimate is {gross}, and after your {deductible} "
+        "paid": ("Your claim was approved automatically. The repair estimate is {gross}, and after your {deductible} "
                  "deductible we will pay {payout}. You'll receive a confirmation with the payment details."),
         "below_deductible": ("Your claim is registered. The estimated repair cost ({gross}) is below your "
                              "deductible of {deductible}, so there is no payment on this claim. If a garage "
@@ -32,7 +32,7 @@ MESSAGES = {
                    "will contact you about the next steps."),
     },
     "nl": {
-        "paid": ("Uw schade is goedgekeurd. De geschatte reparatiekosten zijn {gross}. Na aftrek van uw eigen "
+        "paid": ("Uw schade is automatisch goedgekeurd. De geschatte reparatiekosten zijn {gross}. Na aftrek van uw eigen "
                  "risico van {deductible} betalen wij {payout} uit. U ontvangt een bevestiging met de "
                  "betalingsgegevens."),
         "below_deductible": ("Uw schade is geregistreerd. De geschatte reparatiekosten ({gross}) liggen onder "

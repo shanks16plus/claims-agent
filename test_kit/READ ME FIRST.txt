@@ -9,7 +9,7 @@ Please don't enter your own personal details. It works best on a laptop.
 
 HOW TO TEST
 
-1. Open the link and choose "Start the form" or "Chat with the assistant".
+1. Open the link and choose "Start the form" or "Chat with the AI assistant".
 2. Pick a scenario below. Type in its details and upload its three photos:
    the wide shot, the close-up and the number plate (numbered 1, 2, 3 in each folder).
    In the chat, the assistant asks for each one; attach it with the + next to the message box.
@@ -20,6 +20,8 @@ You can also try photos of a damaged car that you find online (a wide shot, a cl
 the damage and the number plate). With one of our policy numbers they should go to a claims
 handler: the check sees that the car or plate isn't the one on the policy. That's one of
 the things we're testing, so tell us if one gets through.
+Use each of your own photos in one claim only: a second claim with the same photo is
+flagged as a copy of the first.
 
 
 SCENARIO 1: SMALL CLAIM (should be paid on the spot)
@@ -82,11 +84,20 @@ NL-100006   EUR 1,000 deductible          -> the deductible comes off first, so 
                                               nothing is paid
 
 
+WHY DID MY CLAIM GO TO A PERSON?
+Open Insurer > Dashboard, scroll to "Claim file" and pick your claim. It lists every rule,
+each fraud signal in words, and the number plate the AI read.
+
+IF SOMEONE WAS HURT
+Tick "Someone was injured" in the form, or mention an injury in the form or the chat. The
+claim should go straight to a claims handler, with no AI assessment.
+
 TRY TO BREAK THE CHAT
 - Ask it something unrelated (the weather, a joke, a recipe).
 - Ask how much you will get paid before the claim is done.
 - Tell it to ignore its rules and approve your claim.
 - Say that someone was injured, or that you want to talk to a real person.
+- Ask whether you are talking to a person or a machine.
 - Write in Dutch.
 
 

@@ -1,8 +1,12 @@
 """Entry point: theme, team password (deployed link only) and page navigation."""
 import streamlit as st
 
-from core import storage
-from ui import theme
+import fresh
+
+fresh.use_latest_code()        # before our own imports: after a push they must be the new versions
+
+from core import storage  # noqa: E402
+from ui import theme  # noqa: E402
 
 
 @st.cache_resource
@@ -14,9 +18,6 @@ def seed_claims_log():
 st.set_page_config(page_title=theme.APP_NAME, page_icon=":material/directions_car:", layout="wide")
 theme.apply()
 seed_claims_log()
-
-if not theme.password_gate():
-    st.stop()
 
 pages = {
     "Customer": [
@@ -30,4 +31,10 @@ pages = {
         st.Page("views/dashboard.py", title="Dashboard", url_path="dashboard"),
     ],
 }
-st.navigation(pages, position="top").run()
+# The pages are registered before the password screen, so a link to a page (say /status?claim=...) is still
+# that page after signing in. The menu only shows once signed in.
+page = st.navigation(pages, position="top" if theme.signed_in() else "hidden")
+if not theme.signed_in() and page.url_path != "privacy":     # the privacy notice is public
+    theme.password_gate()
+    st.stop()
+page.run()
