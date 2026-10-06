@@ -113,8 +113,8 @@ with band("ink", "streets"):
 
 # --- See it in action: unedited screen recordings, one per part of the product ---------------------------------
 DEMOS = {
-    "Chat": ("demo_chat", "A claim filed through the chat assistant and settled on the spot: estimate €1,326.76, "
-                          "payout €1,076.76 after the deductible."),
+    "Chat": ("demo_chat", "A claim filed through the chat assistant and settled on the spot: estimate €1,021.24, "
+                          "payout €771.24 after the deductible."),
     "Form": ("demo_form", "The same kind of claim through the form, also settled on the spot: estimate €1,021.24, "
                           "payout €771.24."),
     "Insurer dashboard": ("demo_dashboard", "What the insurer sees: every claim, what the rules decided, fraud "
@@ -131,7 +131,7 @@ if available:
         name, caption = available[pick]
         show(f"<div class='ca-demo' data-reveal='fade'><div class='ca-video demo' data-src='app/static/{name}.mp4' "
              f"data-controls='1'><img alt='' src='app/static/{name}_poster.jpg'></div></div>"
-             f"<p class='ca-small' style='margin-top:.8rem'>{caption} Recorded on 25 September 2026 with the "
+             f"<p class='ca-small' style='margin-top:.8rem'>{caption} Recorded on 6 October 2026 with the "
              "fictional demo policy NL-100001. The car photo is by AVDLCZ on Wikimedia Commons (CC0).</p>")
 
 # --- When a person takes over ---------------------------------------------------------------------------------
