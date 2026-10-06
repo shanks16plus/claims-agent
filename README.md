@@ -140,12 +140,12 @@ Costs include the photo checks. The advice probe for GLM and Haiku was re-scored
 
 ## Demo videos
 
-The home page shows three screen recordings, one per part of the product (`static/demo_<flow>.mp4`):
-- **Chat:** a claim filed through the chat assistant, settled on the spot (estimate €1,326.76, payout €1,076.76).
-- **Form:** the same kind of claim through the form, settled on the spot (estimate €1,021.24, payout €771.24).
-- **Insurer dashboard:** the dashboard with those claims in it.
+The home page shows three screen recordings, one per part of the product (`static/demo_<flow>.mp4`), recorded on 6 October 2026:
+- **Chat** (1 min 59 s): a claim filed through the chat assistant, settled on the spot (estimate €1,021.24, payout €771.24).
+- **Form** (1 min 1 s): the same kind of claim through the form, settled on the spot (estimate €1,021.24, payout €771.24).
+- **Insurer dashboard** (33 s): the dashboard with those claims in it, ending on the Claim file of a large claim that went to a claims handler.
 
-They were recorded before repair or replace became a rule in code. The same claim now prices at €520.30 or €1,021.24 (payout €270.30 or €771.24), depending on whether the model lists a light scuff next to the bumper.
+In both runs the model listed a light scuff next to the bumper. When it doesn't, the same claim prices at €520.30 (payout €270.30).
 
 The claims use the small-claim demo set: a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata. To record them again, start the app and run:
 
@@ -153,7 +153,15 @@ The claims use the small-claim demo set: a scraped rear bumper, from a CC0 photo
 python scripts/record_demo.py --flow chat        # or form, or dashboard; needs Playwright and Google Chrome
 ```
 
-The recorder drives Chrome like a person would, with real model calls (a few cents for chat and form), so the outcome is whatever the rules decide.
+The recorder drives Chrome like a person would, with real model calls (about €0.10 for the chat and €0.07 for the form), so the outcome is whatever the rules decide.
+
+For slides, the chat run can also save stills of single parts of the screens (PNG, at twice the screen resolution) and `run.json`, the numbers of that claim read from the claims log. They go into a folder git ignores:
+
+```bash
+python scripts/record_demo.py --flow chat --stills data/runtime/deck_assets                    # the video and the stills
+python scripts/record_demo.py --flow chat --set large --stills data/runtime/deck_assets/large_claim --no-video --parts status,file
+python scripts/record_demo.py --flow stills --claim CLM-... --stills data/runtime/deck_assets  # a claim already in the log
+```
 
 ## Deploying
 
