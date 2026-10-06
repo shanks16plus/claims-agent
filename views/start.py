@@ -111,28 +111,32 @@ with band("ink", "streets"):
                     for key in ["canal", "cafe", "street", "status", "canal_trees", "form"] * 2)
     show(f"<div class='ca-strip' data-reveal='fade' data-delay='0.3'><div class='track'>{strip}</div></div>")
 
-# --- See it in action: unedited screen recordings, one per part of the product ---------------------------------
+# --- See it in action: screen recordings, one per part of the product -----------------------------------------
+SMALL_CLAIM = ("Recorded on 6 October 2026 with the fictional demo policy NL-100001. The car photo is by AVDLCZ on "
+               "Wikimedia Commons (CC0).")
 DEMOS = {
     "Chat": ("demo_chat", "A claim filed through the chat assistant and settled on the spot: estimate €1,021.24, "
-                          "payout €771.24 after the deductible."),
+                          f"payout €771.24 after the deductible. {SMALL_CLAIM}"),
     "Form": ("demo_form", "The same kind of claim through the form, also settled on the spot: estimate €1,021.24, "
-                          "payout €771.24."),
+                          f"payout €771.24. {SMALL_CLAIM}"),
     "Insurer dashboard": ("demo_dashboard", "What the insurer sees: every claim, what the rules decided, fraud "
-                                            "flags and the model cost per claim."),
+                                            "flags and the model cost per claim. Recorded on 6 October 2026. The "
+                                            "claim file at the end is a large demo claim on the fictional policy "
+                                            "NL-100002. Its car photo is by Usman Malik on Unsplash."),
 }
 available = {label: demo for label, demo in DEMOS.items() if (config.ROOT / "static" / f"{demo[0]}.mp4").exists()}
 if available:
     with band("stone", "demo"):
         heading("See it in action", "The prototype at work, start to finish",
-                "Unedited screen recordings with real model calls: a claim through the chat, the same kind of claim "
-                "through the form, and what the insurer sees. Nothing is sped up.", index="04")
+                "Screen recordings with real model calls: a claim through the chat, the same kind of claim "
+                "through the form, and what the insurer sees. Each is one continuous run. Nothing is skipped or "
+                "sped up.", index="04")
         pick = st.segmented_control("Recording", list(available), default=next(iter(available)), required=True,
                                     label_visibility="collapsed", key="demo_pick")
         name, caption = available[pick]
         show(f"<div class='ca-demo' data-reveal='fade'><div class='ca-video demo' data-src='app/static/{name}.mp4' "
              f"data-controls='1'><img alt='' src='app/static/{name}_poster.jpg'></div></div>"
-             f"<p class='ca-small' style='margin-top:.8rem'>{caption} Recorded on 6 October 2026 with the "
-             "fictional demo policy NL-100001. The car photo is by AVDLCZ on Wikimedia Commons (CC0).</p>")
+             f"<p class='ca-small' style='margin-top:.8rem'>{caption}</p>")
 
 # --- When a person takes over ---------------------------------------------------------------------------------
 with band("surface", "handover"):
