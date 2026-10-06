@@ -147,6 +147,8 @@ The home page shows three screen recordings, one per part of the product (`stati
 
 In both runs the model listed a light scuff next to the bumper. When it doesn't, the same claim prices at €520.30 (payout €270.30).
 
+Each video is one continuous run at real speed. Two things are done to the recordings: the bottom strip that headless Chrome adds below the page is cropped off, and the chat video stops at the status page. In the chat video of 6 October four frames (0.16 s) were also replaced by the frame before them, because taking two stills during the recording left a short flash. The recorder now takes those stills in a way that leaves no flash.
+
 The claims use the small-claim demo set: a scraped rear bumper, from a CC0 photo on Wikimedia Commons that still carries its camera metadata. To record them again, start the app and run:
 
 ```bash
@@ -155,7 +157,7 @@ python scripts/record_demo.py --flow chat        # or form, or dashboard; needs 
 
 The recorder drives Chrome like a person would, with real model calls (about €0.10 for the chat and €0.07 for the form), so the outcome is whatever the rules decide.
 
-For slides, the chat run can also save stills of single parts of the screens (PNG, at twice the screen resolution) and `run.json`, the numbers of that claim read from the claims log. They go into a folder git ignores:
+For slides, the chat run can also save stills of single parts of the screens (PNG, at twice the screen resolution) and `run.json`, the numbers of that claim read from the claims log. The split of the model cost into chat and checks comes from the spend log (`data/runtime/spend.db`). They go into a folder git ignores:
 
 ```bash
 python scripts/record_demo.py --flow chat --stills data/runtime/deck_assets                    # the video and the stills

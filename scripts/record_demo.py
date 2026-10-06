@@ -13,17 +13,20 @@ a few cents each and the outcome is whatever the rules decide.
     python scripts/record_demo.py --flow chat --set small_clean --out /tmp/draft.mp4
 
 Stills for slides. With --stills FOLDER the chat run also saves PNG stills of single parts of the screens (at
-device scale factor 2) and run.json, the numbers of that claim read from the claims log:
+device scale factor 2) and run.json, the numbers of that claim read from the claims log (the split of the model
+cost into chat and checks comes from the spend log):
 
     python scripts/record_demo.py --flow chat --stills data/runtime/deck_assets            # video and stills
     python scripts/record_demo.py --flow chat --set large --stills FOLDER --no-video --parts status,file
     python scripts/record_demo.py --flow stills --claim CLM-... --stills FOLDER            # a claim already filed
 
 Parts: chat (needs the live chat run), status, file (the Claim file on the dashboard), dashboard, home.
+A failure in the stills never costs the video of a run: the script says what is missing and how to take it again.
 
 Uses the installed Google Chrome (it plays the MP4 hero video; Playwright's own Chromium does not).
 """
 import argparse
+import io
 import json
 import re
 import shutil
@@ -33,7 +36,9 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -86,10 +91,10 @@ class Stills:
                     height: Math.max(...boxes.map(b => b.bottom)) - top}};
         }}""")
 
-    def save(self, page, name, find, pad=12, fit=True):
+    def save(self, page, name, find, pad=12, fit=True, settle=900):
         """Save the part of the page that `find` covers, with a small margin. fit=True scrolls the part to the top
         and makes the window taller when needed; fit=False takes only what is on screen now, so a recording that is
-        running is left alone."""
+        running is left alone. `settle` is the wait after scrolling, longer for a part that animates once on screen."""
         box = self.box(page, find)
         if box is None:
             self.missed.append(name)
@@ -103,15 +108,29 @@ class Stills:
             page.evaluate(f"""() => {{ {FINDERS}
                 const main = one('section.stMain'), target = [{find}].flat().filter(Boolean)[0];
                 main.scrollTo({{top: main.scrollTop + target.getBoundingClientRect().top - {pad + 70}}}); }}""")
-            page.wait_for_timeout(900)
+            page.wait_for_timeout(settle)
             box, size = self.box(page, find), page.viewport_size
+        elif box["y"] < 0 or box["y"] + box["height"] > size["height"]:
+            print(f"  note: {name} does not fit in the window and is cut off")
         left, top = max(0, box["x"] - pad), max(0, box["y"] - pad)
         clip = {"x": left, "y": top, "width": min(size["width"], box["x"] + box["width"] + pad) - left,
                 "height": min(size["height"], box["y"] + box["height"] + pad) - top}
         path = self.folder / f"{name}.png"
-        page.screenshot(path=str(path), clip=clip)
+        if fit:
+            page.screenshot(path=str(path), clip=clip)
+        else:
+            # A clipped screenshot shows in a running recording as a flash of two frames (the part blown up on
+            # grey). A screenshot of the whole window does not, so take that and cut the part out of it.
+            shot = Image.open(io.BytesIO(page.screenshot()))
+            scale = shot.width / size["width"]                     # the device scale factor
+            edges = (clip["x"], clip["y"], clip["x"] + clip["width"], clip["y"] + clip["height"])
+            shot.crop(tuple(round(edge * scale) for edge in edges)).save(path)
         self.saved.append(path.name)
         print(f"  still {path.name}  {round(clip['width'])} x {round(clip['height'])} points")
+
+    def summary(self):
+        print(f"Stills: {len(self.saved)} saved in {self.folder}"
+              + (f"; NOT SAVED: {', '.join(self.missed)}" if self.missed else "; none missing"))
 
 
 CHECKLIST = "label(one('[class*=\"st-key-sidepanel\"]'), 'claim checklist'), one('.ca-checklist'), one('.ca-meter')"
@@ -144,11 +163,15 @@ def chat_stills_afterwards(page, stills):
     page.locator('[class*="st-key-chatlog"]').wait_for(timeout=30_000)
     page.set_viewport_size({"width": PAGE["width"], "height": 2400})
     page.wait_for_timeout(1500)
+    if not page.get_by_role("button", name="View your claim status").count():     # a fresh chat, not the filed one
+        stills.missed += ["01_chat_photos", "04_chat_tool_log", "04b_chat_tool_log_last_14", "05_chat_last_messages"]
+        print("  chat stills not saved: going back did not return to the filed chat")
+        return
     page.evaluate(OPEN_CHAT_LOG)
     page.wait_for_timeout(1200)
     stills.save(page, "01_chat_photos", PHOTO_TURNS)
     stills.save(page, "04_chat_tool_log", NEWEST_LOG_ROWS)        # filing, the decision and the checks behind it
-    stills.save(page, "04b_chat_tool_log_whole", TOOL_LOG)
+    stills.save(page, "04b_chat_tool_log_last_14", TOOL_LOG)      # all the chat keeps on screen: the last 14 entries
     stills.save(page, "05_chat_last_messages", LAST_MESSAGES)
 
 
@@ -163,8 +186,13 @@ def deck_stills(browser, base_url, claim_id, stills):
         page.locator(".ca-status").wait_for()
         page.wait_for_timeout(3500)
         how = f"one('.ca-ai', {card}) || all('p.ca-small', {card}).find(p => p.querySelector('b'))"   # how it was decided
-        stills.save(page, "06_status_card", f"one('.ca-status'), {how}")
-        stills.save(page, "07_status_amount", f"section({card}, 'The amount', 'Your claim')")
+        stills.save(page, "06_status_card", "one('.ca-status')")
+        stills.save(page, "06b_status_card_with_ai_note", f"one('.ca-status'), {how}")
+        amount = f"section({card}, 'The amount', 'Your claim')"
+        if stills.box(page, amount):
+            stills.save(page, "07_status_amount", amount)
+        else:                                                      # not a missing still: the page has no such block
+            print("  no still 07_status_amount: the status page shows The amount only for a claim that is paid")
         phone = browser.new_context(viewport={"width": 430, "height": 1500}, device_scale_factor=2).new_page()
         phone.goto(f"{base_url}/status?claim={claim_id}", wait_until="networkidle")
         phone.locator(".ca-status").wait_for()
@@ -176,17 +204,22 @@ def deck_stills(browser, base_url, claim_id, stills):
         page.locator('[class*="st-key-card-claim-file"]').wait_for(timeout=60_000)
         page.wait_for_timeout(3000)
     if stills.wants("file"):
-        box = page.locator('[class*="st-key-card-claim-file"] input[role="combobox"]')
+        picker = page.locator('[class*="st-key-card-claim-file"] [data-testid="stSelectbox"]')
+        box = picker.locator('input[role="combobox"]')
         for attempt in range(4):                                   # the list closes if the page reruns meanwhile
             box.click()
             box.fill(claim_id)
             try:
-                page.get_by_role("option").first.click(timeout=6000)
+                page.get_by_role("option").filter(has_text=claim_id).first.click(timeout=6000)
                 break
             except Exception:
                 page.keyboard.press("Escape")
                 page.wait_for_timeout(1500)
+        else:
+            raise RuntimeError(f"The Claim file did not offer {claim_id}")
         page.wait_for_timeout(4000)
+        if claim_id not in picker.inner_text() + box.input_value():   # the card must show this claim, not the newest
+            raise RuntimeError(f"The Claim file shows another claim than {claim_id}")
         file = "one('[class*=\"st-key-card-claim-file\"]')"
         # one column of the card, from its heading to its last line (the two columns differ in length)
         column = lambda title: (f"section(heading({file}, '{title}').closest('[data-testid=\"stColumn\"]'), "   # noqa: E731
@@ -201,8 +234,11 @@ def deck_stills(browser, base_url, claim_id, stills):
     if stills.wants("home"):
         page.goto(f"{base_url}/", wait_until="networkidle")
         page.locator(".ca-flow svg").wait_for(timeout=60_000)
-        page.wait_for_timeout(7000)                                # the diagram has drawn itself
-        stills.save(page, "14_home_workflow_section", "one('[class*=\"st-key-band-night-decide\"]')", pad=0)
+        page.wait_for_timeout(7000)                                # the page and its scripts have loaded
+        # The diagram and the figures under it only start to animate when they come on screen, which is when
+        # save() scrolls the section up. So the wait comes after that scroll.
+        stills.save(page, "14_home_workflow_section", "one('[class*=\"st-key-band-night-decide\"]')", pad=0,
+                    settle=6000)
         stills.save(page, "15_home_workflow_diagram", "one('.ca-flow')", pad=24)
     context.close()
 
@@ -210,17 +246,18 @@ def deck_stills(browser, base_url, claim_id, stills):
 # --- The numbers of one claim, read from the claims log -----------------------------------------------------------
 def write_run_json(claim_id, folder, window=None):
     """Every value comes from data/runtime/claims.db; the split of the model cost comes from the spend log
-    (data/runtime/spend.db), for the calls made between the start and the end of the run."""
+    (data/runtime/spend.db), for the calls made between the start and the end of the run. The spend log has no
+    claim id, so two claims filed at the same time would be counted together."""
     with sqlite3.connect(RUNTIME / "claims.db") as conn:
         conn.row_factory = sqlite3.Row
         row = dict(conn.execute("SELECT * FROM claims WHERE claim_id = ?", (claim_id,)).fetchone())
     details = json.loads(row["details"])
     damage, estimate = details.get("damage") or {}, details.get("estimate") or {}
     fraud, decision = details.get("fraud") or {}, details.get("decision") or {}
-    if window is None:                                            # from the log: chat start to a minute after filing
+    if window is None:                                            # from the log: the start to just after the decision is explained
         filed = datetime.fromisoformat(row["filed_at"])
         window = ((filed - timedelta(seconds=(row["seconds_to_file"] or 0) + 2)).isoformat(timespec="seconds"),
-                  (filed + timedelta(seconds=60)).isoformat(timespec="seconds"))
+                  (filed + timedelta(seconds=15)).isoformat(timespec="seconds"))
     with sqlite3.connect(RUNTIME / "spend.db") as conn:
         calls = conn.execute("SELECT prompt, model, cost_eur FROM spend WHERE at >= ? AND at <= ?", window).fetchall()
     by_prompt = {}
@@ -378,6 +415,8 @@ def record_chat(page, base_url, story, stills=None):
             checklist_saved = True
         if not more:
             break
+    if chat_stills and not checklist_saved:
+        stills.missed.append("02_chat_checklist (three photos were never accepted)")
     page.wait_for_timeout(1500)
     if page.get_by_role("button", name="Confirm and file").count():
         scroll_to(page, '[class*="st-key-card-confirm"]', offset=110, wait=2200)   # the summary to confirm
@@ -387,6 +426,8 @@ def record_chat(page, base_url, story, stills=None):
         page.get_by_role("button", name="View your claim status").wait_for(timeout=240_000)
         frame_chat(page)
         page.wait_for_timeout(4000)                            # the assistant explains the decision
+    elif chat_stills:
+        stills.missed.append("03_chat_confirm_card (no card to confirm)")
     page.get_by_role("button", name="View your claim status").click()
     page.wait_for_url("**/status?claim=*", timeout=60_000)
     page.wait_for_timeout(2500)
@@ -394,7 +435,10 @@ def record_chat(page, base_url, story, stills=None):
     page.wait_for_timeout(3000)
     claim_id, end = re.search(r"claim=([A-Z0-9-]+)", page.url).group(1), time.time()
     if chat_stills:
-        chat_stills_afterwards(page, stills)
+        try:                                                   # the part we keep is recorded: don't lose it over a still
+            chat_stills_afterwards(page, stills)
+        except Exception as error:
+            print(f"  chat stills not finished: {error!r}")
     return claim_id, end
 
 
@@ -454,9 +498,16 @@ FLOWS = {"chat": record_chat, "form": record_form, "dashboard": record_dashboard
 
 
 def spend_between(start, end):
-    with sqlite3.connect(RUNTIME / "spend.db") as conn:
-        return conn.execute("SELECT COALESCE(SUM(cost_eur), 0), COUNT(*) FROM spend WHERE at >= ? AND at <= ?",
-                            (start, end)).fetchone()
+    """(euros, calls) from the local spend log, or None when this machine has no such log yet."""
+    path = RUNTIME / "spend.db"
+    if not path.exists():
+        return None
+    try:
+        with sqlite3.connect(path) as conn:
+            return conn.execute("SELECT COALESCE(SUM(cost_eur), 0), COUNT(*) FROM spend WHERE at >= ? AND at <= ?",
+                                (start, end)).fetchone()
+    except sqlite3.Error:
+        return None
 
 
 def record(base_url, flow, set_name, video_dir, stills=None):
@@ -474,11 +525,19 @@ def record(base_url, flow, set_name, video_dir, stills=None):
         context.close()
         ended_at = (datetime.now() + timedelta(seconds=1)).isoformat(timespec="seconds")
         if stills and claim_id:
-            deck_stills(browser, base_url, claim_id, stills)
-            write_run_json(claim_id, stills.folder, (started_at, ended_at))
+            try:                                               # the run is over: a failure here must not cost the video
+                deck_stills(browser, base_url, claim_id, stills)
+                write_run_json(claim_id, stills.folder, (started_at, ended_at))
+            except Exception as error:
+                print(f"  stills or run.json not finished: {error!r}\n  Take them again without a new run: "
+                      f"--flow stills --claim {claim_id} --stills {stills.folder}")
         browser.close()
-    cost, calls = spend_between(started_at, ended_at)
-    print(f"Model cost of this run: \u20ac{cost:.4f} ({calls} calls)" + (f", claim {claim_id}" if claim_id else ""))
+    local = urlparse(base_url).hostname in ("localhost", "127.0.0.1", "::1")
+    spent = spend_between(started_at, ended_at) if local else None
+    if spent is None:
+        print("Model cost of this run: not available (no spend log on this machine for that app)")
+    else:
+        print(f"Model cost of this run: \u20ac{spent[0]:.4f} ({spent[1]} calls)" + (f", claim {claim_id}" if claim_id else ""))
     return (Path(raw) if raw else None), (end - started if end else None), claim_id
 
 
@@ -488,12 +547,24 @@ def main():
     parser.add_argument("--url", default="http://localhost:8501")
     parser.add_argument("--set", default="small_clean")
     parser.add_argument("--out", help="default: static/demo_<flow>.mp4")
-    parser.add_argument("--stills", help="chat flow: also save stills and run.json into this folder")
+    parser.add_argument("--stills", help="chat or form flow, and --flow stills: save stills and run.json into this folder")
     parser.add_argument("--parts", default=",".join(PARTS), help=f"which stills: {', '.join(PARTS)}")
     parser.add_argument("--no-video", action="store_true", help="with --stills: don't save a video")
     parser.add_argument("--claim", help="with --flow stills: a claim already in the log")
     args = parser.parse_args()
-    stills = Stills(args.stills, args.parts.split(",")) if args.stills else None
+    parts = [part.strip() for part in args.parts.split(",") if part.strip()]
+    unknown = [part for part in parts if part not in PARTS]
+    if unknown:
+        parser.error(f"--parts: unknown {', '.join(unknown)}; choose from {', '.join(PARTS)}")
+    if args.flow == "stills" and not args.stills:
+        parser.error("--flow stills needs --stills FOLDER")
+    if args.flow == "stills" and not args.claim and {"status", "file"} & set(parts):
+        parser.error("--flow stills needs --claim CLM-... for the parts status and file")
+    if args.no_video and not args.stills:
+        parser.error("--no-video saves nothing without --stills FOLDER")
+    if args.stills and args.flow == "dashboard":
+        parser.error("--stills needs a claim: use --flow chat or form, or --flow stills --claim CLM-...")
+    stills = Stills(args.stills, parts) if args.stills else None
 
     if args.flow == "stills":                                     # no run: stills and numbers of a filed claim
         with sync_playwright() as p:
@@ -502,12 +573,15 @@ def main():
             browser.close()
         if stills.wants("status") or stills.wants("file"):          # the parts that are about this one claim
             write_run_json(args.claim, stills.folder)
+        stills.summary()
         return
 
     out = Path(args.out or ROOT / "static" / f"demo_{args.flow}.mp4")
     ffmpeg = shutil.which("ffmpeg") or "/opt/anaconda3/bin/ffmpeg"
     with tempfile.TemporaryDirectory() as tmp:
         raw, keep, _ = record(args.url, args.flow, args.set, None if args.no_video else Path(tmp), stills)
+        if stills:
+            stills.summary()
         if raw is None:
             return
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -517,7 +591,10 @@ def main():
                         "-c:v", "libx264", "-preset", "slow", "-crf", "26", "-pix_fmt", "yuv420p",
                         "-movflags", "+faststart", "-an", str(out)], check=True)
     poster = out.with_name(out.stem + "_poster.jpg")
-    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-ss", "3", "-i", str(out), "-frames:v", "1", "-q:v", "3",
+    # The chat poster is taken a second later: the demo set of the run is picked by then, and the page has not
+    # scrolled yet. Look at the poster after a chat recording, that moment is short.
+    poster_at = "4" if args.flow == "chat" else "3"
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-ss", poster_at, "-i", str(out), "-frames:v", "1", "-q:v", "3",
                     str(poster)], check=True)
     print(f"Saved {out} ({out.stat().st_size / 1e6:.1f} MB) and {poster.name}")
 
