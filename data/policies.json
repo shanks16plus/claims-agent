@@ -1,5 +1,5 @@
 {
-  "_note": "Fictional demo policies. No real customers. own_damage_covered is the only coverage field the system reads. The vehicle and registration match the car in each demo photo set; NL-100004 to NL-100006 cover the same car as NL-100001, so the policy rules can be tried with the scenario 1 photos.",
+  "_note": "Fictional demo policies. No real customers. own_damage_covered is the only coverage field the system reads. The vehicle and registration match the car in each demo photo set; NL-100004 to NL-100006 cover the same car as NL-100001, so the policy rules can be tried with the scenario 1 photos. NL-100011 to NL-100018 match the cars in the team's own eight test photo sets (the last digit is the scenario number), so those claims are judged on the damage and not flagged as another car. Their vehicle values are rough placeholders.",
   "policies": [
     {
       "policy_number": "NL-100001",
@@ -78,6 +78,110 @@
       "vehicle_value_eur": 3000,
       "registration": "1UD 2870",
       "demo_use": "High deductible, low vehicle value (below deductible and total loss tests)"
+    },
+    {
+      "policy_number": "NL-100011",
+      "holder_first_name": "Lotte",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Kia Picanto (2017)",
+      "vehicle_value_eur": 9000,
+      "registration": "PR-305-H",
+      "demo_use": "Team test set, scenario 1"
+    },
+    {
+      "policy_number": "NL-100012",
+      "holder_first_name": "Bram",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Volkswagen up! (2016)",
+      "vehicle_value_eur": 7000,
+      "registration": "HL-315-T",
+      "demo_use": "Team test set, scenario 2"
+    },
+    {
+      "policy_number": "NL-100013",
+      "holder_first_name": "Noor",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Peugeot 2008 (2017)",
+      "vehicle_value_eur": 11500,
+      "registration": "PP-826-L",
+      "demo_use": "Team test set, scenario 3"
+    },
+    {
+      "policy_number": "NL-100014",
+      "holder_first_name": "Thijs",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Mazda CX-5 (2012)",
+      "vehicle_value_eur": 10500,
+      "registration": "11-XGV-7",
+      "demo_use": "Team test set, scenario 4"
+    },
+    {
+      "policy_number": "NL-100015",
+      "holder_first_name": "Eva",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Opel Corsa (2009)",
+      "vehicle_value_eur": 4500,
+      "registration": "JT-089-T",
+      "demo_use": "Team test set, scenario 5"
+    },
+    {
+      "policy_number": "NL-100016",
+      "holder_first_name": "Ruben",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Alfa Romeo MiTo (2011)",
+      "vehicle_value_eur": 5000,
+      "registration": "78-RHS-6",
+      "demo_use": "Team test set, scenario 6"
+    },
+    {
+      "policy_number": "NL-100017",
+      "holder_first_name": "Iris",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "BMW 3 Series (2017)",
+      "vehicle_value_eur": 24000,
+      "registration": "XG-278-L",
+      "demo_use": "Team test set, scenario 7"
+    },
+    {
+      "policy_number": "NL-100018",
+      "holder_first_name": "Koen",
+      "active": true,
+      "coverage_type": "all_risk",
+      "own_damage_covered": true,
+      "deductible_eur": 250,
+      "start_date": "2024-06-01",
+      "vehicle": "Volkswagen Golf Variant (2016)",
+      "vehicle_value_eur": 12000,
+      "registration": "JT-262-L",
+      "demo_use": "Team test set, scenario 8"
     }
   ]
 }
